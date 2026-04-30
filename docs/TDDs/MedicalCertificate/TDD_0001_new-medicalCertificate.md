@@ -69,3 +69,10 @@ Adaptador de Entrada: MedicalCertificateController (Ruta HTTP que recibe el requ
 |Falta matrícula médica| Mensaje: "La matrícula del médico es obligatoria"  | 400 Bad Request  |
 |El socio ya tiene apto| Invalida el anterior (is_updated = false) y crea el nuevo (is_updated = true)  | 201 Created |
 |Error de conexión| Mensaje: "Error interno, reintente más tarde"  | 500 Internal Server Error  |
+
+### Plan de implementación
+
+1.Crear el esquema de la entidad MedicalCertificate en la base de datos y correr la migración.
+2.Definir los tipos (CreateMedicalCertificateRequest) en el paquete compartido.
+3.Implementar el repositorio y la lógica en el caso de uso para garantizar que la actualización del registro viejo y la inserción del nuevo ocurran juntas sin fallas de integridad.
+4.Crear el componente del formulario en React y conectarlo con el nuevo endpoint.
