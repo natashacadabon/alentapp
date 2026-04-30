@@ -25,3 +25,16 @@ Permitir el registro digital de los aptos físicos (certificados médicos) de lo
 - La matrícula del médico debe ser un campo necesario y obligatorio.
 - El nuevo certificado debe guardarse con estado activo por defecto.
 - El certificado ingresado debe estar asociado obligatoriamente a un socio validado en el sistema. 
+
+## Diseño Técnico (RFC)
+
+### Modelo de Datos
+
+Se define la entidad 'Medical_Certificate' con las siguientes propiedades:
+
+- `id`: Identificador único universal (UUID).
+- `issue_daate`: Fecha de emisión (date).
+- `expiry_date`: Fecha de vencimiento (date).
+- `doctor_license`: Cadena de texto, representa la matrícula del médico (string).
+- `is_validated`: Booleano. Indica si es el certificado vigente (`true`) o uno histórico/invalidado (`false`)
+- `member_ia`: Clave foránea (UUID), relación con el socio.
