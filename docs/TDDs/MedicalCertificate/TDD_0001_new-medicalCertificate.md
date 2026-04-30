@@ -51,6 +51,21 @@ Definicion de los tipos en el paquete compartido para asegurar sincronización e
     expiry_date: Date;
     doctor_license: string;
 }
+```
 
 ### Componentes de Arquitectura Hexagonal
 
+Puerto: MedicalCertificateRepository (Interface en el Dominio).
+Caso de Uso: CreateMedicalCertificate (Orquesta la transacción: primero busca si el socio tiene un certificado activo, lo actualiza a is_updated = false, y luego guarda el nuevo con is_updated = true).
+Adaptador de Salida: DB persistence adapter (Implementación de las consultas en la DB).
+Adaptador de Entrada: MedicalCertificateController (Ruta HTTP que recibe el request).
+
+### Caso de borde y errores
+
+| Escenario                   | Resultado Esperado                            | Código HTTP               |
+| ----------------------------| --------------------------------------------- | ------------------------- |
+| Socio no existe | Mensaje: "El socio indicado no se encuentra registrado" | 404 Not Found    |
+|Fechas inconsistentes| Mensaje: "La fecha de vencimiento debe ser posterior a la de emisión"  | 400 Bad Request  |
+|Falta matrícula médica| Mensaje: "La matrícula del médico es obligatoria"  | 400 Bad Request  |
+|El socio ya tiene apto| Invalida el anterior (is_updated = false) y crea el nuevo (is_updated = true)  | 201 Created |
+|Error de conexión| Mensaje: "Error interno, reintente más tarde"  | 500 Internal Server Error  |
