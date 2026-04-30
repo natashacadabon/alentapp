@@ -16,8 +16,7 @@ Permitir el registro digital de los aptos físicos (certificados médicos) de lo
 
 ### User Persona
 
-- Nombre: Administrador
-- Necesidad: Al recibir el certificado medico, necesita cargarlo rápidamente en el sistema y que la plataforma se encargue automáticamente de darle de baja al certificado del año anterior, sin tener que buscarlo.
+Como Administrador, quiero registrar un nuevo certificado médico en el sistema, para mantener el apto físico del socio al día y que el sistema invalide automáticamente cualquier certificado anterior.
 
 ### Criterio de aceptacion
 - Solo puede haber un certificado activo por socio en el sistema.
@@ -33,11 +32,11 @@ Permitir el registro digital de los aptos físicos (certificados médicos) de lo
 Se define la entidad 'Medical_Certificate' con las siguientes propiedades:
 
 - `id`: Identificador único universal (UUID).
-- `issue_daate`: Fecha de emisión (date).
+- `issue_date`: Fecha de emisión (date).
 - `expiry_date`: Fecha de vencimiento (date).
 - `doctor_license`: Cadena de texto, representa la matrícula del médico (string).
 - `is_validated`: Booleano. Indica si es el certificado vigente (`true`) o uno histórico/invalidado (`false`)
-- `member_ia`: Clave foránea (UUID), relación con el socio.
+- `member_id`: Clave foránea (UUID), relación con el socio.
 
 ### Contrato de API (@alentapp/shared)
 Definicion de los tipos en el paquete compartido para asegurar sincronización entre el frontend y el backend:
@@ -56,7 +55,7 @@ Definicion de los tipos en el paquete compartido para asegurar sincronización e
 ### Componentes de Arquitectura Hexagonal
 
 Puerto: MedicalCertificateRepository (Interface en el Dominio).
-Caso de Uso: CreateMedicalCertificate (Orquesta la transacción: primero busca si el socio tiene un certificado activo, lo actualiza a is_updated = false, y luego guarda el nuevo con is_updated = true).
+Caso de Uso: CreateMedicalCertificate (Orquesta la transacción: primero busca si el socio tiene un certificado activo, lo actualiza a is_validate = false, y luego guarda el nuevo con is_validate = true).
 Adaptador de Salida: DB persistence adapter (Implementación de las consultas en la DB).
 Adaptador de Entrada: MedicalCertificateController (Ruta HTTP que recibe el request).
 
@@ -67,7 +66,7 @@ Adaptador de Entrada: MedicalCertificateController (Ruta HTTP que recibe el requ
 | Socio no existe | Mensaje: "El socio indicado no se encuentra registrado" | 404 Not Found    |
 |Fechas inconsistentes| Mensaje: "La fecha de vencimiento debe ser posterior a la de emisión"  | 400 Bad Request  |
 |Falta matrícula médica| Mensaje: "La matrícula del médico es obligatoria"  | 400 Bad Request  |
-|El socio ya tiene apto| Invalida el anterior (is_updated = false) y crea el nuevo (is_updated = true)  | 201 Created |
+|El socio ya tiene apto| Invalida el anterior (is_validate = false) y crea el nuevo (is_validate = true)  | 201 Created |
 |Error de conexión| Mensaje: "Error interno, reintente más tarde"  | 500 Internal Server Error  |
 
 ### Plan de implementación
