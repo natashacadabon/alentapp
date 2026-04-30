@@ -38,3 +38,19 @@ Se define la entidad 'Medical_Certificate' con las siguientes propiedades:
 - `doctor_license`: Cadena de texto, representa la matrícula del médico (string).
 - `is_validated`: Booleano. Indica si es el certificado vigente (`true`) o uno histórico/invalidado (`false`)
 - `member_ia`: Clave foránea (UUID), relación con el socio.
+
+### Contrato de API (@alentapp/shared)
+Definicion de los tipos en el paquete compartido para asegurar sincronización entre el frontend y el backend:
+
+- Endpoint: `POST /api/v1/medicalcertificate`
+- Request Body (CreateMedicalCertificateRequest):
+```ts
+{
+    member_id: string;
+    issue_date: Date;
+    expiry_date: Date;
+    doctor_license: string;
+}
+
+### Componentes de Arquitectura Hexagonal
+
