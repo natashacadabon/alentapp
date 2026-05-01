@@ -1,5 +1,5 @@
 ---
-id: 00002
+id: 0002
 estado: En proceso
 autor: Lindon Sofia
 fecha: 2026-05-01
@@ -52,3 +52,27 @@ Se utilizará el paquete compartido para definir el cuerpo de la petición. Todo
     doctor_license?: string;
 }
 ```
+
+### Componentes de Arquitectura Hexagonal
+
+Puerto: MedicalCertificateRepository (Método update(id, data)).
+Servicio de Dominio: MedicalCertificateValidator (Encargado de validar la coherencia de las fechas y el formato de la matrícula).
+Caso de Uso: UpdateMedicalCertificateUseCase (Orquesta la validación comprobando que el certificado exista y llama al repositorio).
+Adaptador de Entrada: MedicalCertificateController (Ruta HTTP que extrae el id de la URL, recibe el body y mapea excepciones a códigos HTTP).
+Adaptador de Salida: PostgresMedicalCertificateRepository (Actualización usando el método update del ORM en la base de datos).
+
+### Caso de borde y errores
+
+| Escenario                   | Resultado Esperado                            | Código HTTP               |
+| ----------------------------| --------------------------------------------- | ------------------------- |
+| Certificado inexistente | Mensaje: "El certificado indicado no se encuentra registrado" | 404 Not Found    |
+|Fechas inconsistentes| Mensaje: "La fecha de vencimiento debe ser posterior a la de emisión"  | 400 Bad Request  |
+|Error de conexión| Mensaje: "Error interno, reintente más tarde"  | 500 Internal Server Error  |
+
+### Plan de implementación
+
+1.Actualizar las interfaces en el paquete @alentapp/shared (UpdateMedicalCertificateRequest).
+2.Ampliar el MedicalCertificateRepository con el método update.
+3.Implementar la lógica en UpdateMedicalCertificateUseCase añadiendo las validaciones de fechas correspondientes.
+4.Crear la ruta PUT en el controlador asegurando que no se expongan campos restringidos.
+5.Consumir el endpoint desde el servicio de Frontend y reutilizar el formulario para permitir la edición.
