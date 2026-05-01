@@ -37,13 +37,15 @@ Se definirá la entidad `Payment` con las siguientes propiedades y restricciones
 * `monto`: valor numérico decimal mayor a cero que representa el importe del pago.
 * `mesReferencia`: número entero que indica el mes al que corresponde el pago. Debe ser un número entre 1 y 12.
 * `anioReferencia`: número entero que indica el año al que corresponde el pago.
-* `Estado`: Enumeración(`Pendiente`,`Pagado`,`Vencido`,`Cancelado`)
+* `estado`: Enumeración(`Pendiente`,`Pagado`,`Vencido`,`Cancelado`)
+* `fechaVencimiento`: fecha límite para abonar la obligación financiera.
 * `fechaPago`: Fecha en la que se efectiviza el pago. En el alta inicial de una obligación financiera pendiente debe quedar en `null`.
 * `memberId`: Identificador único universal (UUID) asociado al miembro. Foreign key. 
 
+
 ### Contrato de API (@alentapp/shared)
 
-*   **Endpoint**: `POST /api/v1/payment`
+*   **Endpoint**: `POST /api/v1/payments`
 *   **Request Body**:
 ```ts
 export interface CreatePaymentRequest {
