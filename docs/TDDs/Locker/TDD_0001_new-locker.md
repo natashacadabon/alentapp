@@ -68,3 +68,13 @@ Se definirá la entidad `Locker` con las siguientes propiedades y restricciones:
 3. **Adaptador de Salida**: Repositorio de base de datos (Persistencia con restricción de unicidad sobre numero de locker).
 4. **Adaptador de Entrada**: `LockerController` (Ruta HTTP `POST /api/v1/locker`).
 
+## Casos de Borde y Errores
+
+| Escenario                        | Resultado Esperado                                  | Código HTTP               |
+| -------------------------------- | --------------------------------------------------- | ------------------------- |
+| Número de Locker ya existente | Mensaje: "Ya existe un Locker con ese número"    | 409 Conflict              |
+| Numero de locker negativo o cero         | Mensaje: "El número de Locker debe ser positivo" | 400 Bad Request           |
+| Locacion vacía o ausente       | Mensaje: "La ubicación es obligatoria"              | 400 Bad Request           |
+| Error de conexión a DB           | Mensaje: "Error interno, reintente más tarde"       | 500 Internal Server Error |
+
+
