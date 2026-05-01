@@ -24,3 +24,12 @@ Permitir al personal de administración dar de baja permanentemente un certifica
 - El sistema debe validar que el certificado médico exista antes de intentar borrarlo.
 - El sistema debe realizar un borrado físico de la base de datos (hard delete).
 - Si el borrado es exitoso, la tabla de certificados en el perfil del socio debe actualizarse automáticamente.
+
+## Diseño Técnico (RFC)
+
+### Contrato de API (@alentapp/shared)
+Al tratarse de una operación destructiva que solo requiere conocer el identificador único del certificado, no se envía cuerpo en la petición HTTP.
+
+- Endpoint: DELETE /api/v1/medical-certificates/:id
+- Request Body: None
+- Response: 204 No Content en caso de éxito.
