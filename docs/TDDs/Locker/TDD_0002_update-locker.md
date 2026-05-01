@@ -32,7 +32,7 @@ Permitir a los administrativos modificar un Locker existente: actualizar su ubic
 
 Se utilizará el paquete compartido para definir el cuerpo de la petición. Todos los campos son opcionales ya que se trata de una actualización parcial.
 
-- **Endpoint**: `UPDATE /api/v1/locker/:id`
+- **Endpoint**: `UPDATE /api/v1/lockers/:id`
 - **Request Body** (`UpdateLockerRequest`) — todos los campos son opcionales:
 
 ```ts
