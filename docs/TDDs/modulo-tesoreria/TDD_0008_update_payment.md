@@ -21,10 +21,10 @@ Actualizar el estado de una obligación financiera existente, permitiendo reflej
 ### Criterio de Aceptación
 * El sistema debe permitir actualizar el estado de un pago existente.
 * El sistema debe permitir cambiar el estado del pago a  `Pagado`, `Vencido` o `Cancelado`.
-* El sistema no debe permitir modificar datos estructurales del pago como `memberId`, `monto`, `mesReferencia`, `anioReferencia` o `fechaVencimiento`.
-* Si el pago se actualiza a estado `Pagado`, el sistema debe registrar una `fechaPago`.
-* Si no se informa `fechaPago` al marcar el pago como `Pagado`, el sistema puede asignar automáticamente la fecha actual.
-*  Si la `fechaVencimiento` ya fue superada y el pago no fue registrado como `Pagado`, el sistema debe actualizar el estado del pago a `Vencido`.
+* El sistema no debe permitir modificar datos estructurales del pago como `member_id`, `amount`, `month`, `year` o `due_date`.
+* Si el pago se actualiza a estado `Pagado`, el sistema debe registrar una `payment_date`.
+* Si no se informa `payment_date` al marcar el pago como `Pagado`, el sistema puede asignar automáticamente la fecha actual.
+*  Si la `due_date` ya fue superada y el pago no fue registrado como `Pagado`, el sistema debe actualizar el estado del pago a `Vencido`.
 * Si el pago se actualiza a estado `Cancelado`, el registro debe conservarse en la base de datos y no debe eliminarse físicamente.
 * El sistema no debe permitir actualizar un pago inexistente.
 * El sistema debe validar que el nuevo estado sea válido.
@@ -38,7 +38,7 @@ Actualizar el estado de una obligación financiera existente, permitiendo reflej
 ```ts
 {
     estado?: "Pendiente" | "Pagado" | "Vencido" | "Cancelado";
-    fechaPago?: string;
+    payment_date?: string;
 
 }
 ```
@@ -49,10 +49,10 @@ La lógica se distribuye en capas para separar las reglas de negocios de los det
 *   **Domain**: 
     - Entidad:  `Payment`.
     - Reglas de negocio asociado:
-        - No se debe poder modificar datos estructurales del registro del pago, como `monto`, `memberId`, `mesReferencia`, `anioReferencia` o `fechaVencimiento`.
-        - Si el pago se actualiza a `Pagado`, debe registrarse una `fechaPago`.
-        -  Si la  `fechaVencimiento` ya fue superada y el pago no fue registrado como `Pagado`, el sistema debe actualizar el estado del pago a `Vencido`.
-        - Si al actualizar el estado a `Pagado` no se informa una `fechaPago` específica, el sistema debe utilizar la fecha actual automáticamente. 
+        - No se debe poder modificar datos estructurales del registro del pago, como `amount`, `member_id`, `month`, `year` o `due_date`.
+        - Si el pago se actualiza a `Pagado`, debe registrarse una `payment_date`.
+        -  Si la  `due_date` ya fue superada y el pago no fue registrado como `Pagado`, el sistema debe actualizar el estado del pago a `Vencido`.
+        - Si al actualizar el estado a `Pagado` no se informa una `payment_date` específica, el sistema debe utilizar la fecha actual automáticamente. 
         - Si el pago se actualiza a `Cancelado`, el registro debe       conservarse en la base de datos y no debe eliminarse físicamente.
         - No se debe permitir actualizar el estado de un pago inexistente. 
 *   **Application**: 
@@ -62,7 +62,7 @@ La lógica se distribuye en capas para separar las reglas de negocios de los det
 
 *   **Infrastructure**: 
      - **Adaptador de entrada**: `PaymentController`. Expone la ruta `PATCH /api/v1/payments/:id`. Extrae el id desde la URL y recibe el request HTTP, invoca el caso de uso `UpdatePaymentUseCase` y devuelve la respuesta HTTP correspondiente.
-      - **Adaptador de salida**: `PrismaPaymentRepository`. Implementa el puerto `PaymentRepository`, busca el pago por id actualiza los campos permitidos y los persiste en la base de datos.
+      - **Adaptador de salida**: `PostgresPaymentRepository`. Implementa el puerto `PaymentRepository`, busca el pago por id actualiza los campos permitidos y los persiste en la base de datos.
 
 ## Casos de Borde y Errores
 
@@ -70,8 +70,8 @@ La lógica se distribuye en capas para separar las reglas de negocios de los det
 |---|---|---|
 | Pago inexistente | El sistema debe informar que el pago indicado no existe. | 404 Not Found |
 | Estado inválido | El sistema debe informar que el estado enviado no es válido. Solo se permiten `Pagado`, `Vencido` o `Cancelado`. | 400 Bad Request |
-| Intento de modificar campos estructurales | El sistema debe rechazar cambios sobre `memberId`, `monto`, `mesReferencia`, `anioReferencia` o `fechaVencimiento`. | 400 Bad Request |
-| Pago marcado como `Pagado` con `fechaPago` inválida | El sistema debe informar que la `fechaPago` debe tener un formato válido. | 400 Bad Request |
+| Intento de modificar campos estructurales | El sistema debe rechazar cambios sobre `member_id`, `amount`, `month`, `year` o `due_date`. | 400 Bad Request |
+| Pago marcado como `Pagado` con `payment_date` inválida | El sistema debe informar que la `payment_date` debe tener un formato válido. | 400 Bad Request |
 | Error de infraestructura | El sistema debe informar un error interno si falla la conexión con la base de datos. | 500 Internal Server Error |
 
 ## Plan de Implementación
@@ -79,10 +79,10 @@ La lógica se distribuye en capas para separar las reglas de negocios de los det
 1. Crear los tipos `UpdatePaymentRequest` en `@alentapp/shared`.
 2. Ampliar el puerto `PaymentRepository` con los métodos necesarios:
    - `findById(id)`
-   - `updateStatus(id, estado, fechaPago)`
-3. Implementar o ampliar `PaymentValidator` para validar estados permitidos, reglas de transición y `fechaPago`.
+   - `updateStatus(id, estado, payment_date)`
+3. Implementar o ampliar `PaymentValidator` para validar estados permitidos, reglas de transición y `payment_date`.
 4. Implementar el caso de uso `UpdatePaymentUseCase`.
-5. Implementar los métodos correspondientes en `PrismaPaymentRepository`.
+5. Implementar los métodos correspondientes en `PostgresPaymentRepository`.
 6. Crear la ruta `PATCH /api/v1/payments/:id`.
 7. Mapear los errores del caso de uso a los códigos HTTP correspondientes.
 8. Consumir el endpoint desde el frontend para permitir la actualización del estado del pago.
