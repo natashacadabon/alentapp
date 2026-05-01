@@ -34,7 +34,7 @@ Actualizar el estado de una obligación financiera existente, permitiendo reflej
 
 ### Contrato de API (@alentapp/shared)
 *   **Endpoint**: `PATCH /api/v1/payments/:id`
-*   **Request Body**: (UpdateMemberRequest)
+*   **Request Body**: (UpdatePaymentRequest)
 ```ts
 {
     estado?: "Pendiente" | "Pagado" | "Vencido" | "Cancelado";
