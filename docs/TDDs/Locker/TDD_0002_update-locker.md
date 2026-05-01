@@ -55,4 +55,12 @@ Se utilizará el paquete compartido para definir el cuerpo de la petición. Todo
     member_id: string | null;
 }
 ```
+### Componentes de Arquitectura Hexagonal
+
+1. **Puerto**: `LockerRepository` (Método `update(id, data)`).
+2. **Servicio de Dominio**: `LockerValidator` (Encargado de validar estado `Maintenance`, unicidad del numero de locker y coherencia entre `status` y `member_id`).
+3. **Caso de Uso**: `UpdateLockerUseCase` (Orquesta la validación y llama al repositorio con transacción).
+4. **Adaptador de Salida**: Repositorio de base de datos (Actualización usando el método `update` del ORM).
+5. **Adaptador de Entrada**: `LockerController` (Ruta HTTP `PATCH /api/v1/lockers/:id` que extrae el `id` de la URL y mapea excepciones a códigos HTTP).
+
 
