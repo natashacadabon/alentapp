@@ -33,7 +33,7 @@ Permitir el registro de nuevos deportes en el sistema, garantizando que el depor
 Se define la entidad `Sport` con las siguientes propiedades y restricciones:
 *   `id`: Identificador único universal (UUID).
 *   `name`: Cadena de texto única (string).
-*   `description`: Cadena de texto (string).
+*   `description`: Cadena de texto opcional (string).
 *   `max_capacity`: Número entero mayor a cero (int).
 *   `additional_price`: Precio adicional (float).
 *   `requires_medical_certificate`: Booleano, indica si requiere certificado médico (boolean).
@@ -47,7 +47,7 @@ Definiremos los tipos en el paquete compartido para asegurar sincronización:
 ```ts
 {
     name: string;
-    description: string;
+    description?: string;
     max_capacity: number;
     additional_price: number;
     requires_medical_certificate: boolean;
