@@ -74,4 +74,11 @@ Se utilizará el paquete compartido para definir el cuerpo de la petición. Todo
 | `member_id` con UUID no existente      | Mensaje: "El socio no existe"                                | 400 Bad Request           |
 | Error de conexión a DB                 | Mensaje: "Error interno, reintente más tarde"                | 500 Internal Server Error |
 
+## Plan de Implementación
+
+1. Crear el endpoint PATCH para cambiar datos del Locker.
+2. Validar que no pueda asignarse si está en Maintenance.
+3. Validar que no pueda cambiar de socio si ya está Occupied.
+4. Validar que el número sea único si se intenta cambiar.
+5. Guardar los cambios y retornar el Locker actualizado.
 
