@@ -63,4 +63,15 @@ Se utilizará el paquete compartido para definir el cuerpo de la petición. Todo
 4. **Adaptador de Salida**: Repositorio de base de datos (Actualización usando el método `update` del ORM).
 5. **Adaptador de Entrada**: `LockerController` (Ruta HTTP `PATCH /api/v1/lockers/:id` que extrae el `id` de la URL y mapea excepciones a códigos HTTP).
 
+## Casos de Borde y Errores
+
+| Escenario                              | Resultado Esperado                                           | Código HTTP               |
+| -------------------------------------- | ------------------------------------------------------------ | ------------------------- |
+| Locker inexistente                  | Mensaje: "El Locker no existe"                            | 404 Not Found             |
+| Asignar Locker en `Maintenance`     | Mensaje: "El Locker está en mantenimiento y no puede asignarse" | 409 Conflict        |
+| Asignar Locker `Occupied` a otro    | Mensaje: "El Locker ya se encuentra ocupado"              | 409 Conflict              |
+| Nuevo numero de locker ya usado por otro Locker | Mensaje: "Ya existe un Locker con ese número"         | 409 Conflict              |
+| `member_id` con UUID no existente      | Mensaje: "El socio no existe"                                | 400 Bad Request           |
+| Error de conexión a DB                 | Mensaje: "Error interno, reintente más tarde"                | 500 Internal Server Error |
+
 
