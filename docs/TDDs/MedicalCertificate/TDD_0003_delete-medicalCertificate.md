@@ -33,3 +33,10 @@ Al tratarse de una operación destructiva que solo requiere conocer el identific
 - Endpoint: DELETE /api/v1/medical-certificates/:id
 - Request Body: None
 - Response: 204 No Content en caso de éxito.
+
+### Componentes de Arquitectura Hexagonal
+
+Puerto: MedicalCertificateRepository (Método delete(id)).
+Caso de Uso: DeleteMedicalCertificateUseCase (Comprueba existencia previa vía findById y delega la eliminación).
+Adaptador de Salida: PostgresMedicalCertificateRepository (Eliminación usando el método delete de Prisma o el ORM utilizado).
+Adaptador de Entrada: MedicalCertificateController (Ruta HTTP que extrae el id y devuelve un status 204).
