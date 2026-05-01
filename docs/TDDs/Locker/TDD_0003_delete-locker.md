@@ -26,4 +26,13 @@ Permitir a los administrativos eliminar permanentemente un Locker del sistema. L
 - El sistema **no debe permitir** eliminar un Locker cuyo status sea `Occupied` (tiene un socio asignado).
 - Si el borrado es exitoso la tabla de base de datos debe actualizarse.
 
+## Diseño Técnico (RFC)
+
+### Contrato de API (@alentapp/shared)
+
+Al tratarse de una operación destructiva que solo requiere el identificador, no se envía cuerpo en la petición.
+
+- **Endpoint**: `DELETE /api/v1/lockers/:id`
+- **Request Body**: `None`
+- **Response**: `204 No Content` en caso de éxito.
 
