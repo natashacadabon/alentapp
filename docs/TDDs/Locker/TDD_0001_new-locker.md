@@ -77,4 +77,11 @@ Se definirá la entidad `Locker` con las siguientes propiedades y restricciones:
 | Locacion vacía o ausente       | Mensaje: "La ubicación es obligatoria"              | 400 Bad Request           |
 | Error de conexión a DB           | Mensaje: "Error interno, reintente más tarde"       | 500 Internal Server Error |
 
+## Plan de Implementación
+
+1. Crear la tabla `Locker` en base de datos con el número único.
+2. Hacer el endpoint POST para recibir número y ubicación.
+3. Validar que el número no exista antes de guardar.
+4. Guardar el nuevo Locker con status "Available" por defecto.
+5. Retornar los datos del Locker creado.
 
