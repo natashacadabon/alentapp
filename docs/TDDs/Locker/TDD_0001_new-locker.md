@@ -38,3 +38,27 @@ Se definirá la entidad `Locker` con las siguientes propiedades y restricciones:
 - `status`: Enumeración (`Available`, `Occupied`, `Maintenance`). Valor por defecto: `Available`.
 - `member_id`: UUID foráneo nullable que referencia a `Member`. `null` indica que el Locker está libre.
 
+### Contrato de API (@alentapp/shared)
+
+- **Endpoint**: `POST /api/v1/locker`
+- **Request Body** (`CreateLockerRequest`):
+
+```ts
+{
+    number: number;
+    location: string;
+}
+```
+
+- **Response** (`LockerResponse`) — `201 Created`:
+
+```ts
+{
+    id: string;
+    number: number;
+    location: string;
+    status: 'Available' | 'Occupied' | 'Maintenance';
+    member_id: string | null;
+}
+```
+
