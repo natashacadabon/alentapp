@@ -40,7 +40,7 @@ Se definirá la entidad `Locker` con las siguientes propiedades y restricciones:
 
 ### Contrato de API (@alentapp/shared)
 
-- **Endpoint**: `POST /api/v1/locker`
+- **Endpoint**: `POST /api/v1/lockers`
 - **Request Body** (`CreateLockerRequest`):
 
 ```ts
@@ -61,4 +61,10 @@ Se definirá la entidad `Locker` con las siguientes propiedades y restricciones:
     member_id: string | null;
 }
 ```
+### Componentes de Arquitectura Hexagonal
+
+1. **Puerto**: `LockerRepository` (Interface en el Dominio, método `create(data)`).
+2. **Caso de Uso**: `NewLockerUseCase` (Verifica que el numero del locker no exista antes de delegar al repositorio).
+3. **Adaptador de Salida**: Repositorio de base de datos (Persistencia con restricción de unicidad sobre numero de locker).
+4. **Adaptador de Entrada**: `LockerController` (Ruta HTTP `POST /api/v1/locker`).
 
