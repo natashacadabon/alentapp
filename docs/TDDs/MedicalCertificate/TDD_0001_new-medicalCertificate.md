@@ -16,7 +16,8 @@ Permitir el registro digital de los aptos físicos (certificados médicos) de lo
 
 ### User Persona
 
-Como Administrador, quiero registrar un nuevo certificado médico en el sistema, para mantener el apto físico del socio al día y que el sistema invalide automáticamente cualquier certificado anterior.
+    - **Nombre**: Administrativo.
+    - **Necesidad** : Registrar un nuevo certificado médico en el sistema, para mantener el apto físico del socio al dia y que el sistema invalide automáticamente cualquier certificado anterior.
 
 ### Criterio de aceptacion
 - Solo puede haber un certificado activo por socio en el sistema.
@@ -66,7 +67,7 @@ Adaptador de Entrada: MedicalCertificateController (Ruta HTTP que recibe el requ
 | Socio no existe | Mensaje: "El socio indicado no se encuentra registrado" | 404 Not Found    |
 |Fechas inconsistentes| Mensaje: "La fecha de vencimiento debe ser posterior a la de emisión"  | 400 Bad Request  |
 |Falta matrícula médica| Mensaje: "La matrícula del médico es obligatoria"  | 400 Bad Request  |
-|El socio ya tiene apto| Invalida el anterior (is_validated = false) y crea el nuevo (is_validated = true)  | 201 Created |
+|El socio ya tiene un certificado| Invalida el anterior (is_validated = false) y crea el nuevo (is_validated = true)  | 201 Created |
 |Error de conexión| Mensaje: "Error interno, reintente más tarde"  | 500 Internal Server Error  |
 
 ### Plan de implementación
