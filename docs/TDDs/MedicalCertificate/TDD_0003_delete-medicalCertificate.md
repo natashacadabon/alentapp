@@ -6,7 +6,7 @@ fecha: 2026-05-01
 titulo: Eliminación de certificado medico
 ---
 
-# TDD-000X: Eliminación de Certificados Médicos Existentes
+# TDD-0003: Eliminación de Certificados Médicos Existentes
 
 ## Contexto de Negocio (PRD)
 
