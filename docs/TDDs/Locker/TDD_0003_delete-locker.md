@@ -48,9 +48,8 @@ Al tratarse de una operación destructiva que solo requiere el identificador, no
 | Escenario                        | Resultado Esperado                                              | Código HTTP               |
 | -------------------------------- | --------------------------------------------------------------- | ------------------------- |
 | Locker inexistente            | Mensaje: "El Locker no existe"                               | 404 Not Found             |
-| Locker con status `Occupied`  | Mensaje: "No se puede eliminar un Locker con un socio asignado" | 409 Conflict           |
-| Locker en `Maintenance`       | Eliminación permitida (no está asignado a ningún socio)         | 204 No Content            |
-| Locker `Available`            | Eliminación exitosa                                             | 204 No Content            |
+| Locker con estado `Occupied` (ocupado)  | Mensaje: "No se puede eliminar un Locker con un socio asignado" | 409 Conflict           |
+| Locker con estado `Maintenance`(en mantenimiento) o  `Available`(disponible)     | Eliminación permitida (no está asignado a ningún socio)         | 204 No Content            |                                           | 204 No Content            |
 | Error de conexión a DB           | Mensaje: "Error interno, reintente más tarde"                   | 500 Internal Server Error |
 
 ## Plan de Implementación
