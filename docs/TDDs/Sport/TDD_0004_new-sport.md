@@ -53,6 +53,17 @@ Definiremos los tipos en el paquete compartido para asegurar sincronización:
     requires_medical_certificate: boolean;
 }
 ```
+*   **Response Body**: `201 Created` en caso de éxito.
+```ts
+{
+    id: string;
+    name: string;
+    description?: string;
+    max_capacity: number;
+    additional_price: number;
+    requires_medical_certificate: boolean;
+}
+```
 
 ### Componentes de Arquitectura Hexagonal
 
@@ -82,4 +93,5 @@ Definiremos los tipos en el paquete compartido para asegurar sincronización:
 4. Definir el puerto `SportRepository` en domain e implementar el caso de uso `create`.
 5. Implementar el repositorio `PostgresSportRepository` en infrastructure.
 6. Crear el controlador `SportController` con la ruta `POST /api/v1/sport`.
-7. Crear el formulario en React y conectar con el endpoint del backend.
+7. Añadir el método `create` al servicio Frontend.
+9. Crear el formulario en React y conectar con el endpoint del backend.
