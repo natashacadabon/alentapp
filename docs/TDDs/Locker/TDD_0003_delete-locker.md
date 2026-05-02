@@ -53,3 +53,10 @@ Al tratarse de una operación destructiva que solo requiere el identificador, no
 | Locker `Available`            | Eliminación exitosa                                             | 204 No Content            |
 | Error de conexión a DB           | Mensaje: "Error interno, reintente más tarde"                   | 500 Internal Server Error |
 
+## Plan de Implementación
+
+1. Crear el endpoint DELETE para eliminar un Locker.
+2. Validar que el Locker exista.
+3. Validar que no esté asignado a ningún socio (status no sea "Occupied").
+4. Borrar el Locker de base de datos.
+5. Mostrar confirmación antes de borrar en el Frontend.
