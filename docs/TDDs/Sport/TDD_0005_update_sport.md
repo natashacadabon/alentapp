@@ -45,6 +45,17 @@ Se utilizará el paquete compartido para definir el cuerpo de la petición. Los 
     max_capacity?: number;
 }
 ```
+*   **Response Body**: `200 OK` en caso de éxito.
+```ts
+{
+    id: string;
+    name: string;
+    description?: string;
+    max_capacity: number;
+    additional_price: number;
+    requires_medical_certificate: boolean;
+}
+```
 
 ### Componentes de Arquitectura Hexagonal
 
@@ -77,4 +88,5 @@ Se utilizará el paquete compartido para definir el cuerpo de la petición. Los 
 4. Incorporar las validaciones de negocio `max_capacity > 0` e inmutabilidad del campo `name`.
 5. Implementar el método `update` en `PostgresSportRepository`.
 6. Crear la ruta `PUT /api/v1/sport/:id` en `SportController` y vincularla al caso de uso.
-7. Consumir el endpoint desde el frontend, exponiendo únicamente los campos editables.
+7. Añadir el método `update` al servicio Frontend.
+8. Crear el formulario de edición en React exponiendo solo los campos `description` y `max_capacity`.
