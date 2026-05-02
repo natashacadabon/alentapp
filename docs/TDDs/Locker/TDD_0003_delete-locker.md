@@ -43,3 +43,13 @@ Al tratarse de una operación destructiva que solo requiere el identificador, no
 3. **Adaptador de Salida**: Repositorio de base de datos (Eliminación usando el método `delete`).
 4. **Adaptador de Entrada**: `LockerController` (Ruta HTTP `DELETE /api/v1/lockers/:id` que retorna status 204).
 
+## Casos de Borde y Errores
+
+| Escenario                        | Resultado Esperado                                              | Código HTTP               |
+| -------------------------------- | --------------------------------------------------------------- | ------------------------- |
+| Locker inexistente            | Mensaje: "El Locker no existe"                               | 404 Not Found             |
+| Locker con status `Occupied`  | Mensaje: "No se puede eliminar un Locker con un socio asignado" | 409 Conflict           |
+| Locker en `Maintenance`       | Eliminación permitida (no está asignado a ningún socio)         | 204 No Content            |
+| Locker `Available`            | Eliminación exitosa                                             | 204 No Content            |
+| Error de conexión a DB           | Mensaje: "Error interno, reintente más tarde"                   | 500 Internal Server Error |
+
