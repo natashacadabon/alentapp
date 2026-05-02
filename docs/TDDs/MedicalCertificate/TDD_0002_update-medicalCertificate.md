@@ -16,7 +16,9 @@ Permitir a los administrativos corregir errores de tipeo o modificar informació
 
 ### User Persona
 
-Como administrador quiero poder modificar datos de un certificado medico rapidamente para poder corregir errores cometidos al ingresar los datos sin la necesidad de dar de baja el registro completo.
+    - **Nombre** : Administrativo.
+    - **Necesidad** : Modificar datos de un certificado médico rapidamente para poder corregir errores cometidos al ingresar los datos sin la necesidad de dar de baja el registro completo.
+
 
 ### Criterios de Aceptación
 
