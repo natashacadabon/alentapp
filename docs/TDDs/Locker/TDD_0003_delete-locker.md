@@ -36,3 +36,10 @@ Al tratarse de una operación destructiva que solo requiere el identificador, no
 - **Request Body**: `None`
 - **Response**: `204 No Content` en caso de éxito.
 
+### Componentes de Arquitectura Hexagonal
+
+1. **Puerto**: `LockerRepository` (Método `delete(id)` y `findById(id)`).
+2. **Caso de Uso**: `DeleteLockerUseCase` (Verifica existencia y que el Locker no esté ocupado antes de delegar la eliminación).
+3. **Adaptador de Salida**: Repositorio de base de datos (Eliminación usando el método `delete`).
+4. **Adaptador de Entrada**: `LockerController` (Ruta HTTP `DELETE /api/v1/lockers/:id` que retorna status 204).
+
