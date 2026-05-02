@@ -44,3 +44,17 @@ Al tratarse de una operación destructiva que solo requiere conocer el identific
     - Adaptador de Salida: `PostgresSportRepository` (Eliminación usando el método `delete` de Prisma).
     - Adaptador de Entrada: `SportController` (Ruta HTTP que extrae el `id` y devuelve status 204).
 
+## Casos de Borde y Errores
+
+| Escenario                   | Resultado Esperado                            | Código HTTP               |
+| ----------------------------| --------------------------------------------- | ------------------------- |
+| Deporte inexistente | Mensaje: "El deporte no existe" | 404 Not Found |
+| Error de conexión a DB | Mensaje: "Error interno, reintente más tarde" | 500 Internal Server Error |
+
+## Plan de Implementación
+
+1. Agregar el método `delete` en el puerto `SportRepository` y en `PostgresSportRepository`.
+2. Implementar la lógica en `DeleteSportUseCase`.
+3. Agregar el endpoint `DELETE /api/v1/sport/:id` en `SportController`.
+4. Añadir el método `delete` al servicio Frontend.
+5. Enlazar el botón de eliminación en la vista correspondiente agregando confirmación antes de ejecutar la llamada.
