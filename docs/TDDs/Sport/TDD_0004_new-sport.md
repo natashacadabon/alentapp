@@ -77,9 +77,9 @@ Definiremos los tipos en el paquete compartido para asegurar sincronización:
 ## Plan de Implementación
 
 1. Crear el esquema de la entidad `Sport` para la persistencia y correr la migración.
-2. Definir los tipos `CreateSportRequest` y `SportResponse` en `@alentapp/shared`.
+2. Definir los tipos `CreateSportRequest` y `SportDTO` en `@alentapp/shared`.
 3. Implementar la entidad y las reglas de negocio en el Domain.
-4. Definir el puerto `SportRepository` en domain e implementar el caso de uso `CreateSport`.
+4. Definir el puerto `SportRepository` en domain e implementar el caso de uso `create`.
 5. Implementar el repositorio `PostgresSportRepository` en infrastructure.
 6. Crear el controlador `SportController` con la ruta `POST /api/v1/sport`.
 7. Crear el formulario en React y conectar con el endpoint del backend.
