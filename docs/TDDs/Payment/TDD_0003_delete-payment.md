@@ -1,12 +1,12 @@
 ---
-id: 0009
+id: 0003
 estado: Propuesto
 autor: Dana Natasha Cadabon
 fecha: 2026-04-30
 titulo: Anulación de Pago
 ---
 
-# TDD-0009: Anulación de Pago
+# TDD-0003: Anulación de Pago
 
 ## Contexto de Negocio (PRD)
 

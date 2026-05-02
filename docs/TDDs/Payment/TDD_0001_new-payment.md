@@ -1,12 +1,12 @@
 ---
-id: 0007
+id: 0001
 status: Propuesto
 autor: Dana Natasha Cadabon
 fecha: 2026-04-30
 titulo: Registro de Nuevo Pago
 ---
 
-# TDD-0007: Registro de Nuevo Pago
+# TDD-0001: Registro de Nuevo Pago
 
 ## Contexto de Negocio (PRD)
 
