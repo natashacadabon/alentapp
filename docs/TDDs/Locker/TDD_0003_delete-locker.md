@@ -40,7 +40,7 @@ Al tratarse de una operación destructiva que solo requiere el identificador, no
 
 1. **Puerto**: `LockerRepository` (Método `delete(id)` y `findById(id)`).
 2. **Caso de Uso**: `DeleteLockerUseCase` (Verifica existencia y que el Locker no esté ocupado antes de delegar la eliminación).
-3. **Adaptador de Salida**: Repositorio de base de datos (Eliminación usando el método `delete`).
+3. **Adaptador de Salida**: `PostgresLockerRepository` (Eliminación usando el método `delete`).
 4. **Adaptador de Entrada**: `LockerController` (Ruta HTTP `DELETE /api/v1/lockers/:id` que retorna status 204).
 
 ## Casos de Borde y Errores
@@ -54,8 +54,11 @@ Al tratarse de una operación destructiva que solo requiere el identificador, no
 
 ## Plan de Implementación
 
-1. Crear el endpoint DELETE para eliminar un Locker.
-2. Validar que el Locker exista.
-3. Validar que no esté asignado a ningún socio (status no sea "Occupied").
-4. Borrar el Locker de base de datos.
-5. Mostrar confirmación antes de borrar en el Frontend.
+1. Ampliar el puerto `LockerRepository` y `PostgresLockerRepository` con los métodos necesarios:
+	- `findById(id)`
+	- `delete(id)`
+2. Implementar o ampliar la validación de negocio para asegurar que el Locker exista y que no esté en estado `Occupied`.
+3. Implementar la lógica en `DeleteLockerUseCase` delegando la eliminación solo si las validaciones son correctas.
+4. Crear el endpoint `DELETE /api/v1/lockers/:id` en `LockerController` y mapear errores de negocio a los códigos HTTP correspondientes (`404` y `409`).
+5. Añadir el método `delete` al servicio Frontend de Lockers.
+6. Enlazar el botón de eliminación en la vista correspondiente, agregando confirmación antes de ejecutar la llamada.
