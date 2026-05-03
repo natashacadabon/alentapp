@@ -1,12 +1,12 @@
 ---
-id: 0008
+id: 0002
 estado: Propuesto
 autor: Dana Natasha Cadabon
 fecha: 2026-04-30
 titulo: Actualización de Estado de Pago
 ---
 
-# TDD-0008: Actualización de Estado de Pago
+# TDD-0002: Actualización de Estado de Pago
 
 ## Contexto de Negocio (PRD)
 
