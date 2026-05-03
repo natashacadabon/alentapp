@@ -65,7 +65,7 @@ Se definirá la entidad `Locker` con las siguientes propiedades y restricciones:
 
 1. **Puerto**: `LockerRepository` (Interface en el Dominio, método `create(data)`).
 2. **Caso de Uso**: `NewLockerUseCase` (Verifica que el numero del locker no exista antes de delegar al repositorio).
-3. **Adaptador de Salida**: Repositorio de base de datos (Persistencia con restricción de unicidad sobre numero de locker).
+3. **Adaptador de Salida**: `PostgresLockerRepository` (Persistencia con restricción de unicidad sobre numero de locker).
 4. **Adaptador de Entrada**: `LockerController` (Ruta HTTP `POST /api/v1/locker`).
 
 ## Casos de Borde y Errores
@@ -79,9 +79,13 @@ Se definirá la entidad `Locker` con las siguientes propiedades y restricciones:
 
 ## Plan de Implementación
 
-1. Crear la tabla `Locker` en base de datos con el número único.
-2. Hacer el endpoint POST para recibir número y ubicación.
-3. Validar que el número no exista antes de guardar.
-4. Guardar el nuevo Locker con status "Available" por defecto.
-5. Retornar los datos del Locker creado.
+1. Ampliar el puerto `LockerRepository` con los métodos necesarios:
+    - `findByNumber(number)`
+    - `create(data)`
+2. Implementar o ampliar la validación de negocio para asegurar que el número de Locker sea válido, que la ubicación sea obligatoria y que no exista otro Locker con el mismo número.
+3. Implementar el caso de uso `NewLockerUseCase` aplicando validaciones y delegando la persistencia.
+4. Implementar los métodos correspondientes en `PostgresLockerRepository`, respetando la unicidad del número y valores por defecto (`status: Available`, `member_id: null`).
+5. Crear la ruta `POST /api/v1/lockers` en `LockerController`.
+6. Mapear los errores del caso de uso a los códigos HTTP correspondientes (`400`, `409` y `500`).
+7. Consumir el endpoint desde el frontend para permitir el alta y reflejar el nuevo Locker creado.
 
