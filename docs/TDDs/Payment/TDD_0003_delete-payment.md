@@ -49,6 +49,7 @@ export interface CancelPaymentResponse {
   status: "Pendiente" | "Pagado" | "Vencido" | "Cancelado";
   payment_date: string | null;
 }
+```
 
 ### Componentes de Arquitectura Hexagonal
 
