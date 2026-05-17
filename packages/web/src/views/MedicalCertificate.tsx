@@ -11,8 +11,9 @@ import {
     Spinner,
     Center,
     Input,
+    IconButton
 } from '@chakra-ui/react';
-import { LuPlus, LuRefreshCw } from 'react-icons/lu';
+import { LuPlus, LuRefreshCw,LuPencil, LuTrash2 } from 'react-icons/lu';
 import { useEffect, useState } from 'react';
 import { medicalCertificateService } from '../services/medicalCertificate';
 import type {
@@ -277,6 +278,9 @@ export function MedicalCertificateView() {
                                     <Table.ColumnHeader py="4">
                                         Validado
                                     </Table.ColumnHeader>
+                                    <Table.ColumnHeader py="4">
+                                        Acciones 
+                                    </Table.ColumnHeader>
                                 </Table.Row>
                             </Table.Header>
                             <Table.Body>
@@ -344,6 +348,36 @@ export function MedicalCertificateView() {
                                                         ? 'Sí'
                                                         : 'No'}
                                                 </Box>
+                                            </Table.Cell>
+                                            <Table.Cell w="140px">
+                                                <HStack
+                                                    gap="2"
+                                                    justify="center"
+                                                >
+                                                    <IconButton
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        aria-label="Editar locker"
+                                                        // onClick={
+                                                        // }
+                                                    >
+                                                        <LuPencil />
+                                                    </IconButton>
+
+                                                    <IconButton
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        colorPalette="red"
+                                                        aria-label="Eliminar locker"
+                                                        // onClick={
+                                                            
+                                                        // }
+                                                    >
+                                                        <LuTrash2 />
+                                                    </IconButton>
+                                                </HStack>
                                             </Table.Cell>
                                         </Table.Row>
                                     ))
