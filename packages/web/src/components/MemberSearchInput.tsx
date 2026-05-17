@@ -8,6 +8,8 @@ type Props = {
     onSearch: (value: string) => void;
     onSelect: (member: MemberDTO) => void;
     updateMode?: boolean;
+    required?: boolean;
+    disabled?: boolean;
 };
 
 export function MemberSearchInput({
@@ -17,6 +19,8 @@ export function MemberSearchInput({
     onSearch,
     onSelect,
     updateMode,
+    required = !updateMode,
+    disabled = updateMode,
 }: Props) {
     return (
         <Box position="relative" w="100%" ref={searchRef}>
@@ -24,11 +28,11 @@ export function MemberSearchInput({
                 placeholder="Buscar por nombre o DNI"
                 value={value}
                 onChange={(e) => onSearch(e.target.value)}
-                required={!updateMode}
-                disabled={updateMode}
+                required={required}
+                disabled={disabled}
             />
 
-            {!updateMode && results.length > 0 && (
+            {!disabled && results.length > 0 && (
                 <Box
                     position="absolute"
                     top="100%"
