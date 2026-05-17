@@ -31,8 +31,12 @@ import {
     DialogActionTrigger,
     DialogCloseTrigger,
 } from '../components/ui/dialog';
+import { useMemberSearch } from '../hooks/useMemberSearch';
 import { Field } from '../components/ui/field';
-
+import { ConfirmActionDialog } from '../components/ConfirmActionDialog';
+import { MemberSearchInput } from '../components/MemberSearchInput';
+const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
 export function MedicalCertificateView() {
     const [certificates, setCertificates] = useState<MedicalCertificateDTO[]>(
         [],
@@ -55,6 +59,26 @@ export function MedicalCertificateView() {
         expiry_date: '',
         doctor_license: '',
         member_id: '',
+    });
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false);
+    const [deletingCertificate, setDeletingCertificate] =
+        useState<MedicalCertificateDTO | null>(null);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+
+    const {
+        memberSearch,
+        memberResults,
+        memberSearchRef,
+        searchMembers,
+        handleSelectMember,
+        resetMemberSearch,
+        setMemberSearchValue,
+    } = useMemberSearch((member: MemberDTO) => {
+        setFormData((prev) => ({
+            ...prev,
+            member_id: member.id,
+        }));
     });
 
     const fetchCertificates = async () => {
@@ -82,18 +106,34 @@ export function MedicalCertificateView() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!formData.member_id) {
+            alert('Debe seleccionar un socio');
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
             await medicalCertificateService.create(formData);
             setIsDialogOpen(false);
             fetchCertificates();
+
+            setFormData({
+                issue_date: '',
+                expiry_date: '',
+                doctor_license: '',
+                member_id: '',
+            });
+
+            resetMemberSearch();
         } catch (err: any) {
-            alert(err.message || 'Error al guardar el certificado médico');
+            alert(err.message || 'Error al crear el certificado médico');
         } finally {
             setIsSubmitting(false);
         }
     };
+    console.log('Certificados médicos cargados:', certificates);
 
     const openEditModal = (certificate: MedicalCertificateDTO) => {
         setEditingCertificate(certificate);
@@ -126,6 +166,31 @@ export function MedicalCertificateView() {
             alert(err.message || 'Error al actualizar el certificado médico');
         } finally {
             setIsEditSubmitting(false);
+        }
+    };
+
+    const openDeleteModal = (certificate: MedicalCertificateDTO) => {
+        setDeletingCertificate(certificate);
+        setDeleteError(null);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDelete = async () => {
+        if (!deletingCertificate) return;
+
+        setIsDeleteSubmitting(true);
+        setDeleteError(null);
+
+        try {
+            await medicalCertificateService.delete(deletingCertificate.id);
+            setIsDeleteDialogOpen(false);
+            fetchCertificates();
+        } catch (err) {
+            setDeleteError(
+                getErrorMessage(err, 'Error al eliminar el certificado médico'),
+            );
+        } finally {
+            setIsDeleteSubmitting(false);
         }
     };
     useEffect(() => {
@@ -228,17 +293,13 @@ export function MedicalCertificateView() {
                                         />
                                     </Field>
 
-                                    <Field label="ID del socio" required>
-                                        <Input
-                                            placeholder="ID del miembro"
-                                            value={formData.member_id}
-                                            onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    member_id: e.target.value,
-                                                })
-                                            }
-                                            required
+                                    <Field label="Socio" required>
+                                        <MemberSearchInput
+                                            value={memberSearch}
+                                            results={memberResults}
+                                            searchRef={memberSearchRef}
+                                            onSearch={searchMembers}
+                                            onSelect={handleSelectMember}
                                         />
                                     </Field>
                                 </Stack>
@@ -423,9 +484,11 @@ export function MedicalCertificateView() {
                                                             size="sm"
                                                             colorPalette="red"
                                                             aria-label="Eliminar certificado médico"
-                                                            // onClick={
-
-                                                            // }
+                                                            onClick={() =>
+                                                                openDeleteModal(
+                                                                    certificate,
+                                                                )
+                                                            }
                                                         >
                                                             <LuTrash2 />
                                                         </IconButton>
@@ -471,7 +534,6 @@ export function MedicalCertificateView() {
                                         required
                                     />
                                 </Field>
-
                                 <Field label="Fecha de vencimiento" required>
                                     <Input
                                         type="date"
@@ -490,7 +552,6 @@ export function MedicalCertificateView() {
                                         required
                                     />
                                 </Field>
-
                                 <Field label="Matrícula del médico" required>
                                     <Input
                                         placeholder="Ej. MP 12345"
@@ -511,7 +572,6 @@ export function MedicalCertificateView() {
                                         required
                                     />
                                 </Field>
-
                                 <Field label="ID del socio" required>
                                     <Input
                                         placeholder="ID del miembro"
@@ -550,6 +610,21 @@ export function MedicalCertificateView() {
                         <DialogCloseTrigger />
                     </form>
                 </DialogContent>
+            </DialogRoot>
+            <DialogRoot
+                open={isDeleteDialogOpen}
+                onOpenChange={(e) => setIsDeleteDialogOpen(e.open)}
+            >
+                <ConfirmActionDialog
+                    title="Eliminar certificado médico"
+                    description="¿Seguro que querés eliminar este certificado médico? Esta acción es destructiva y no tiene vuelta atrás. "
+                    confirmLabel="Eliminar"
+                    cancelLabel="Cancelar"
+                    variant="danger"
+                    isLoading={isDeleteSubmitting}
+                    error={deleteError}
+                    onConfirm={handleDelete}
+                />
             </DialogRoot>
         </>
     );
