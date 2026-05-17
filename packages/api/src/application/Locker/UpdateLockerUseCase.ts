@@ -36,13 +36,14 @@ export class UpdateLockerUseCase {
             data.member_id !== undefined ? data.member_id : locker.member_id;
 
         const resolvedStatus =
-            nextMemberId !== null && nextMemberId !== undefined
+            nextMemberId != null
                 ? 'Ocupado'
-                : nextStatus;
+                : data.status ??
+                  (locker.member_id != null ? 'Disponible' : locker.status);
 
         this.lockerValidator.validateMaintenanceAssignment(
             locker.status,
-            resolvedStatus,
+            nextStatus,
             nextMemberId,
         );
         this.lockerValidator.validateOccupiedReassignment(locker, nextMemberId);

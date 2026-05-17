@@ -9,12 +9,13 @@ import {
   Flex,
   Spinner,
   Center,
-  Input
+  Input,
+  IconButton
 } from "@chakra-ui/react";
-import { LuPlus, LuRefreshCw } from "react-icons/lu";
-import { useEffect, useState } from "react";
+import { LuPlus, LuRefreshCw, LuPencil, LuTrash2 } from "react-icons/lu";
+import { useEffect, useState, useCallback } from "react";
 import { sportsService } from "../services/sports";
-import type { SportDTO, CreateSportRequest } from "@alentapp/shared";
+import type { SportDTO, CreateSportRequest, UpdateSportRequest } from "@alentapp/shared";
 import { 
   DialogRoot, 
   DialogContent, 
@@ -25,6 +26,7 @@ import {
   DialogActionTrigger,
   DialogCloseTrigger
 } from "../components/ui/dialog";
+import { ConfirmActionDialog } from "../components/ConfirmActionDialog";
 import { Field } from "../components/ui/field";
 
 export function SportsView() {
@@ -32,9 +34,9 @@ export function SportsView() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // Create dialog
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [formData, setFormData] = useState<CreateSportRequest>({
     name: "",
     description: "",
@@ -43,7 +45,19 @@ export function SportsView() {
     requires_medical_certificate: false,
   });
 
-  const fetchSports = async () => {
+  // Edit dialog
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  const [editingSportId, setEditingSportId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<SportDTO | null>(null);
+
+  // Delete dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false);
+  const [deletingSport, setDeletingSport] = useState<SportDTO | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const fetchSports = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -54,11 +68,23 @@ export function SportsView() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const openCreateModal = () => {
     setFormData({ name: "", description: "", max_capacity: 1, additional_price: 0, requires_medical_certificate: false });
-    setIsDialogOpen(true);
+    setIsCreateDialogOpen(true);
+  };
+
+  const openEditModal = (sport: SportDTO) => {
+    setEditingSportId(sport.id);
+    setEditFormData(sport);
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteModal = (sport: SportDTO) => {
+    setDeletingSport(sport);
+    setDeleteError(null);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,7 +92,7 @@ export function SportsView() {
     setIsSubmitting(true);
     try {
       await sportsService.create(formData);
-      setIsDialogOpen(false);
+      setIsCreateDialogOpen(false);
       fetchSports();
     } catch (err: any) {
       alert(err.message || "Error al guardar el deporte");
@@ -75,30 +101,47 @@ export function SportsView() {
     }
   };
 
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFormData) return;
+    setIsEditSubmitting(true);
+    try {
+        await sportsService.update(editingSportId!, {
+            description: editFormData.description,
+            max_capacity: editFormData.max_capacity,
+        });
+        setIsEditDialogOpen(false);
+        fetchSports();
+    } catch (err: any) {
+        alert(err.message || "Error al actualizar el deporte");
+    } finally {
+        setIsEditSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingSport) return;
+    setIsDeleteSubmitting(true);
+    setDeleteError(null);
+    try {
+      await sportsService.delete(deletingSport.id);
+      setIsDeleteDialogOpen(false);
+      fetchSports();
+    } catch (err: any) {
+      setDeleteError(err.message || "Error al eliminar el deporte");
+    } finally {
+      setIsDeleteSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     fetchSports();
-  }, []);
+  }, [fetchSports]);
 
   return (
-    <DialogRoot open={isDialogOpen} onOpenChange={(e) => setIsDialogOpen(e.open)}>
-      <Stack gap="8">
-        <Flex justify="space-between" align="center">
-          <Stack gap="1">
-            <Heading size="2xl" fontWeight="bold">Administración de Deportes</Heading>
-            <Text color="fg.muted" fontSize="md">
-              Gestiona los deportes disponibles en Alentapp.
-            </Text>
-          </Stack>
-          <HStack gap="3">
-            <Button variant="outline" onClick={fetchSports} disabled={isLoading}>
-              <LuRefreshCw /> Actualizar
-            </Button>
-            <Button colorPalette="blue" size="md" onClick={openCreateModal}>
-              <LuPlus /> Agregar Deporte
-            </Button>
-          </HStack>
-        </Flex>
-
+    <>
+      {/* Create Dialog */}
+      <DialogRoot open={isCreateDialogOpen} onOpenChange={(e) => setIsCreateDialogOpen(e.open)}>
         <DialogContent>
           <form onSubmit={handleSubmit}>
             <DialogHeader>
@@ -165,6 +208,93 @@ export function SportsView() {
             <DialogCloseTrigger />
           </form>
         </DialogContent>
+      </DialogRoot>
+
+      {/* Edit Dialog */}
+      <DialogRoot open={isEditDialogOpen} onOpenChange={(e) => setIsEditDialogOpen(e.open)}>
+        <DialogContent>
+          <form onSubmit={handleUpdate}>
+            <DialogHeader>
+              <DialogTitle>Editar Deporte</DialogTitle>
+            </DialogHeader>
+            <DialogBody>
+               <Stack gap="4">
+                <Field label="Nombre">
+                  <Text fontSize="sm" color="fg.muted" py="2" borderBottomWidth="1px" borderColor="border.muted" w="100%">
+                    {editFormData?.name}
+                  </Text>
+                </Field>
+                <Field label="Descripción">
+                  <Input 
+                    placeholder="Descripción opcional" 
+                    value={editFormData?.description || ""}
+                    onChange={(e) => setEditFormData(editFormData ? { ...editFormData, description: e.target.value } : null)}
+                  />
+                </Field>
+                <Field label="Capacidad Máxima" required>
+                  <Input 
+                    type="number"
+                    min={1}
+                    value={editFormData?.max_capacity || 1}
+                    onChange={(e) => setEditFormData(editFormData ? { ...editFormData, max_capacity: Number(e.target.value) } : null)}
+                    required
+                  />
+                </Field>
+                <Field label="Precio Adicional">
+                  <Text fontSize="sm" color="fg.muted" py="2" borderBottomWidth="1px" borderColor="border.muted" w="100%">
+                    ${editFormData?.additional_price}
+                  </Text>
+                </Field>
+                <Field label="Requiere Certificado Médico">
+                  <Text fontSize="sm" color="fg.muted" py="2" borderBottomWidth="1px" borderColor="border.muted" w="100%">
+                    {editFormData?.requires_medical_certificate ? 'Sí' : 'No'}
+                  </Text>
+                </Field>
+              </Stack>
+            </DialogBody>
+            <DialogFooter>
+              <DialogActionTrigger asChild>
+                <Button variant="outline">Cancelar</Button>
+              </DialogActionTrigger>
+              <Button type="submit" colorPalette="blue" loading={isEditSubmitting}>
+                Guardar Cambios
+              </Button>
+            </DialogFooter>
+            <DialogCloseTrigger />
+          </form>
+        </DialogContent>
+      </DialogRoot>
+
+      {/* Delete Dialog */}
+      <DialogRoot open={isDeleteDialogOpen} onOpenChange={(e) => setIsDeleteDialogOpen(e.open)}>
+        <ConfirmActionDialog
+          title="Eliminar Deporte"
+          description={`¿Estás segura de que deseas eliminar el deporte "${deletingSport?.name}"? Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          isLoading={isDeleteSubmitting}
+          error={deleteError}
+          variant="danger"
+          onConfirm={handleDelete}
+        />
+      </DialogRoot>
+
+      <Stack gap="8">
+        <Flex justify="space-between" align="center">
+          <Stack gap="1">
+            <Heading size="2xl" fontWeight="bold">Administración de Deportes</Heading>
+            <Text color="fg.muted" fontSize="md">
+              Gestiona el catálogo de deportes del club: registrá nuevas disciplinas, definí su capacidad máxima y configurá si requieren certificado médico.
+            </Text>
+          </Stack>
+          <HStack gap="3">
+            <Button variant="outline" onClick={fetchSports} disabled={isLoading}>
+              <LuRefreshCw /> Actualizar
+            </Button>
+            <Button colorPalette="blue" size="md" onClick={openCreateModal}>
+              <LuPlus /> Agregar Deporte
+            </Button>
+          </HStack>
+        </Flex>
 
         {error && (
           <Box p="4" bg="red.50" color="red.700" borderRadius="md" border="1px solid" borderColor="red.200">
@@ -205,6 +335,7 @@ export function SportsView() {
                   <Table.ColumnHeader py="4">Cap. Máxima</Table.ColumnHeader>
                   <Table.ColumnHeader py="4">Precio Adicional</Table.ColumnHeader>
                   <Table.ColumnHeader py="4">Cert. Médico</Table.ColumnHeader>
+                  <Table.ColumnHeader py="4" textAlign="end">Acciones</Table.ColumnHeader>
                 </Table.Row>
               </Table.Header>
               <Table.Body>
@@ -228,6 +359,27 @@ export function SportsView() {
                         {sport.requires_medical_certificate ? 'Sí' : 'No'}
                       </Box>
                     </Table.Cell>
+                    <Table.Cell textAlign="end">
+                      <HStack gap="2" justify="flex-end">
+                        <IconButton
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Editar deporte"
+                          onClick={() => openEditModal(sport)}
+                        >
+                          <LuPencil />
+                        </IconButton>
+                        <IconButton
+                          variant="ghost"
+                          size="sm"
+                          colorPalette="red"
+                          aria-label="Eliminar deporte"
+                          onClick={() => openDeleteModal(sport)}
+                        >
+                          <LuTrash2 />
+                        </IconButton>
+                      </HStack>
+                    </Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>
@@ -235,6 +387,6 @@ export function SportsView() {
           )}
         </Box>
       </Stack>
-    </DialogRoot>
+    </>
   );
 }

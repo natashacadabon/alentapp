@@ -129,11 +129,16 @@ export interface LockerDTO {
     number: number;
     status: LockerStatus;
     location: string;
+    member?: {
+        name: string;
+    } | null;
 }
 
 export interface CreateLockerRequest {
     number: number;
     location: string;
+    status?: LockerStatus;
+    member_id?: string | null;
 }
 
 export interface UpdateLockerRequest {

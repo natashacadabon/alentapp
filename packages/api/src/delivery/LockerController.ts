@@ -3,12 +3,14 @@ import { CreateLockerRequest, UpdateLockerRequest } from '@alentapp/shared';
 import { CreateLockerUseCase } from '../application/Locker/NewLockerUseCase.js';
 import { GetLockersUseCase } from '../application/Locker/GetLockersUseCase.js';
 import { UpdateLockerUseCase } from '../application/Locker/UpdateLockerUseCase.js';
+import { DeleteLockerUseCase } from '../application/Locker/DeleteLockerUseCase.js';
 
 export class LockerController {
     constructor(
         private readonly createLockerUseCase: CreateLockerUseCase,
         private readonly getLockersUseCase: GetLockersUseCase,
         private readonly updateLockerUseCase: UpdateLockerUseCase,
+        private readonly deleteLockerUseCase: DeleteLockerUseCase,
     ) {}
 
     async create(
@@ -21,8 +23,10 @@ export class LockerController {
             return reply.status(201).send({ data: locker });
         } catch (error: any) {
             if (
+                error.message.includes('El socio no existe') ||
                 error.message.includes('debe ser positivo') ||
-                error.message.includes('ubicación es obligatoria')
+                error.message.includes('ubicación es obligatoria') ||
+                error.message.includes('no puede tener un socio asignado')
             ) {
                 return reply.status(400).send({ error: error.message });
             }
@@ -87,6 +91,36 @@ export class LockerController {
                     'No se puede poner en mantenimiento un Locker ocupado. Desasigná el socio primero' ||
                 message === 'El Locker ya se encuentra ocupado' ||
                 message === 'Ya existe un Locker con ese número'
+            ) {
+                return reply.status(409).send({ error: message });
+            }
+
+            return reply
+                .status(500)
+                .send({ error: 'Error interno, reintente más tarde' });
+        }
+    }
+
+    async delete(
+        request: FastifyRequest<{ Params: { id: string } }>,
+        reply: FastifyReply,
+    ) {
+        try {
+            const { id } = request.params;
+            await this.deleteLockerUseCase.execute(id);
+
+            return reply.status(204).send();
+        } catch (error: any) {
+            const message =
+                error instanceof Error ? error.message : 'Error desconocido';
+
+            if (message === 'El Locker no existe') {
+                return reply.status(404).send({ error: message });
+            }
+
+            if (
+                message ===
+                'No se puede eliminar un Locker con un socio asignado'
             ) {
                 return reply.status(409).send({ error: message });
             }
