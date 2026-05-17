@@ -133,47 +133,322 @@ export function MedicalCertificateView() {
     }, []);
 
     return (
-      <><DialogRoot
-            open={isDialogOpen}
-            onOpenChange={(e) => setIsDialogOpen(e.open)}
-        >
-            <Stack gap="8">
-                <Flex justify="space-between" align="center">
-                    <Stack gap="1">
-                        <Heading size="2xl" fontWeight="bold">
-                            Administración de Certificados Médicos
-                        </Heading>
-                        <Text color="fg.muted" fontSize="md">
-                            Gestiona los certificados médicos registrados en
-                            Alentapp.
-                        </Text>
-                    </Stack>
+        <>
+            <DialogRoot
+                open={isDialogOpen}
+                onOpenChange={(e) => setIsDialogOpen(e.open)}
+            >
+                <Stack gap="8">
+                    <Flex justify="space-between" align="center">
+                        <Stack gap="1">
+                            <Heading size="2xl" fontWeight="bold">
+                                Administración de Certificados Médicos
+                            </Heading>
+                            <Text color="fg.muted" fontSize="md">
+                                Gestiona los certificados médicos registrados en
+                                Alentapp.
+                            </Text>
+                        </Stack>
 
-                    <HStack gap="3">
-                        <Button
-                            variant="outline"
-                            onClick={fetchCertificates}
-                            disabled={isLoading}
+                        <HStack gap="3">
+                            <Button
+                                variant="outline"
+                                onClick={fetchCertificates}
+                                disabled={isLoading}
+                            >
+                                <LuRefreshCw /> Actualizar
+                            </Button>
+
+                            <Button
+                                colorPalette="blue"
+                                size="md"
+                                onClick={openCreateModal}
+                            >
+                                <LuPlus /> Agregar Certificado
+                            </Button>
+                        </HStack>
+                    </Flex>
+
+                    <DialogContent>
+                        <form onSubmit={handleSubmit}>
+                            <DialogHeader>
+                                <DialogTitle>
+                                    Agregar Nuevo Certificado Médico
+                                </DialogTitle>
+                            </DialogHeader>
+
+                            <DialogBody>
+                                <Stack gap="4">
+                                    <Field label="Fecha de emisión" required>
+                                        <Input
+                                            type="date"
+                                            value={formData.issue_date}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    issue_date: e.target.value,
+                                                })
+                                            }
+                                            required
+                                        />
+                                    </Field>
+
+                                    <Field
+                                        label="Fecha de vencimiento"
+                                        required
+                                    >
+                                        <Input
+                                            type="date"
+                                            value={formData.expiry_date}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    expiry_date: e.target.value,
+                                                })
+                                            }
+                                            required
+                                        />
+                                    </Field>
+
+                                    <Field
+                                        label="Matrícula del médico"
+                                        required
+                                    >
+                                        <Input
+                                            placeholder="Ej. MP 12345"
+                                            value={formData.doctor_license}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    doctor_license:
+                                                        e.target.value,
+                                                })
+                                            }
+                                            required
+                                        />
+                                    </Field>
+
+                                    <Field label="ID del socio" required>
+                                        <Input
+                                            placeholder="ID del miembro"
+                                            value={formData.member_id}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    member_id: e.target.value,
+                                                })
+                                            }
+                                            required
+                                        />
+                                    </Field>
+                                </Stack>
+                            </DialogBody>
+
+                            <DialogFooter>
+                                <DialogActionTrigger asChild>
+                                    <Button variant="outline">Cancelar</Button>
+                                </DialogActionTrigger>
+
+                                <Button
+                                    type="submit"
+                                    colorPalette="blue"
+                                    loading={isSubmitting}
+                                >
+                                    Crear Certificado
+                                </Button>
+                            </DialogFooter>
+
+                            <DialogCloseTrigger />
+                        </form>
+                    </DialogContent>
+
+                    {error && (
+                        <Box
+                            p="4"
+                            bg="red.50"
+                            color="red.700"
+                            borderRadius="md"
+                            border="1px solid"
+                            borderColor="red.200"
                         >
-                            <LuRefreshCw /> Actualizar
-                        </Button>
+                            <Text fontWeight="bold">Error:</Text>
+                            <Text>{error}</Text>
+                        </Box>
+                    )}
 
-                        <Button
-                            colorPalette="blue"
-                            size="md"
-                            onClick={openCreateModal}
-                        >
-                            <LuPlus /> Agregar Certificado
-                        </Button>
-                    </HStack>
-                </Flex>
+                    <Box
+                        bg="bg.panel"
+                        borderRadius="xl"
+                        boxShadow="sm"
+                        borderWidth="1px"
+                        overflow="hidden"
+                        minH="300px"
+                        position="relative"
+                    >
+                        {isLoading ? (
+                            <Center h="300px">
+                                <Stack align="center" gap="4">
+                                    <Spinner size="xl" color="blue.500" />
+                                    <Text color="fg.muted">
+                                        Cargando certificados médicos...
+                                    </Text>
+                                </Stack>
+                            </Center>
+                        ) : certificates.length === 0 ? (
+                            <Center h="300px">
+                                <Stack align="center" gap="4">
+                                    <Text color="fg.muted">
+                                        No se encontraron certificados médicos.
+                                    </Text>
+                                    <Button
+                                        variant="ghost"
+                                        onClick={fetchCertificates}
+                                    >
+                                        Reintentar
+                                    </Button>
+                                </Stack>
+                            </Center>
+                        ) : (
+                            <Table.Root size="md" variant="line" interactive>
+                                <Table.Header>
+                                    <Table.Row bg="bg.muted/50">
+                                        <Table.ColumnHeader py="4">
+                                            Fecha emisión
+                                        </Table.ColumnHeader>
+                                        <Table.ColumnHeader py="4">
+                                            Fecha vencimiento
+                                        </Table.ColumnHeader>
+                                        <Table.ColumnHeader py="4">
+                                            Matrícula médica
+                                        </Table.ColumnHeader>
+                                        <Table.ColumnHeader py="4">
+                                            Socio
+                                        </Table.ColumnHeader>
+                                        <Table.ColumnHeader py="4">
+                                            Validado
+                                        </Table.ColumnHeader>
+                                        <Table.ColumnHeader py="4">
+                                            Acciones
+                                        </Table.ColumnHeader>
+                                    </Table.Row>
+                                </Table.Header>
+                                <Table.Body>
+                                    {certificates.length === 0 ? (
+                                        <Table.Row>
+                                            <Table.Cell
+                                                colSpan={5}
+                                                textAlign="center"
+                                                color="fg.muted"
+                                                py="6"
+                                            >
+                                                No hay certificados médicos
+                                                cargados.
+                                            </Table.Cell>
+                                        </Table.Row>
+                                    ) : (
+                                        certificates.data.map((certificate) => (
+                                            <Table.Row
+                                                key={certificate.id}
+                                                _hover={{ bg: 'bg.muted/30' }}
+                                            >
+                                                <Table.Cell color="fg.muted">
+                                                    {new Date(
+                                                        certificate.issue_date,
+                                                    ).toLocaleDateString()}
+                                                </Table.Cell>
 
+                                                <Table.Cell color="fg.muted">
+                                                    {new Date(
+                                                        certificate.expiry_date,
+                                                    ).toLocaleDateString()}
+                                                </Table.Cell>
+
+                                                <Table.Cell
+                                                    fontWeight="semibold"
+                                                    color="fg.emphasized"
+                                                >
+                                                    {certificate.doctor_license}
+                                                </Table.Cell>
+
+                                                <Table.Cell color="fg.muted">
+                                                    {certificate.member_id}
+                                                </Table.Cell>
+
+                                                <Table.Cell>
+                                                    <Box
+                                                        display="inline-block"
+                                                        px="2"
+                                                        py="0.5"
+                                                        borderRadius="md"
+                                                        bg={
+                                                            certificate.is_validated
+                                                                ? 'green.50'
+                                                                : 'gray.50'
+                                                        }
+                                                        color={
+                                                            certificate.is_validated
+                                                                ? 'green.700'
+                                                                : 'gray.600'
+                                                        }
+                                                        fontSize="xs"
+                                                        fontWeight="bold"
+                                                    >
+                                                        {certificate.is_validated
+                                                            ? 'Sí'
+                                                            : 'No'}
+                                                    </Box>
+                                                </Table.Cell>
+                                                <Table.Cell w="140px">
+                                                    <HStack
+                                                        gap="2"
+                                                        justify="center"
+                                                    >
+                                                        <IconButton
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            aria-label="Editar certificado médico"
+                                                            onClick={() =>
+                                                                openEditModal(
+                                                                    certificate,
+                                                                )
+                                                            }
+                                                        >
+                                                            <LuPencil />
+                                                        </IconButton>
+
+                                                        <IconButton
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            colorPalette="red"
+                                                            aria-label="Eliminar certificado médico"
+                                                            // onClick={
+
+                                                            // }
+                                                        >
+                                                            <LuTrash2 />
+                                                        </IconButton>
+                                                    </HStack>
+                                                </Table.Cell>
+                                            </Table.Row>
+                                        ))
+                                    )}
+                                </Table.Body>
+                            </Table.Root>
+                        )}
+                    </Box>
+                </Stack>
+            </DialogRoot>
+            <DialogRoot
+                open={isEditDialogOpen}
+                onOpenChange={(e) => setIsEditDialogOpen(e.open)}
+            >
+                {' '}
                 <DialogContent>
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleUpdate}>
                         <DialogHeader>
-                            <DialogTitle>
-                                Agregar Nuevo Certificado Médico
-                            </DialogTitle>
+                            <DialogTitle>Editar Certificado Médico</DialogTitle>
                         </DialogHeader>
 
                         <DialogBody>
@@ -181,12 +456,17 @@ export function MedicalCertificateView() {
                                 <Field label="Fecha de emisión" required>
                                     <Input
                                         type="date"
-                                        value={formData.issue_date}
+                                        value={editFormData?.issue_date ?? ''}
                                         onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                issue_date: e.target.value,
-                                            })
+                                            setEditFormData((prev) =>
+                                                prev
+                                                    ? {
+                                                          ...prev,
+                                                          issue_date:
+                                                              e.target.value,
+                                                      }
+                                                    : prev,
+                                            )
                                         }
                                         required
                                     />
@@ -195,12 +475,17 @@ export function MedicalCertificateView() {
                                 <Field label="Fecha de vencimiento" required>
                                     <Input
                                         type="date"
-                                        value={formData.expiry_date}
+                                        value={editFormData?.expiry_date ?? ''}
                                         onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                expiry_date: e.target.value,
-                                            })
+                                            setEditFormData((prev) =>
+                                                prev
+                                                    ? {
+                                                          ...prev,
+                                                          expiry_date:
+                                                              e.target.value,
+                                                      }
+                                                    : prev,
+                                            )
                                         }
                                         required
                                     />
@@ -209,12 +494,19 @@ export function MedicalCertificateView() {
                                 <Field label="Matrícula del médico" required>
                                     <Input
                                         placeholder="Ej. MP 12345"
-                                        value={formData.doctor_license}
+                                        value={
+                                            editFormData?.doctor_license ?? ''
+                                        }
                                         onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                doctor_license: e.target.value,
-                                            })
+                                            setEditFormData((prev) =>
+                                                prev
+                                                    ? {
+                                                          ...prev,
+                                                          doctor_license:
+                                                              e.target.value,
+                                                      }
+                                                    : prev,
+                                            )
                                         }
                                         required
                                     />
@@ -223,12 +515,17 @@ export function MedicalCertificateView() {
                                 <Field label="ID del socio" required>
                                     <Input
                                         placeholder="ID del miembro"
-                                        value={formData.member_id}
+                                        value={editFormData?.member_id ?? ''}
                                         onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                member_id: e.target.value,
-                                            })
+                                            setEditFormData((prev) =>
+                                                prev
+                                                    ? {
+                                                          ...prev,
+                                                          member_id:
+                                                              e.target.value,
+                                                      }
+                                                    : prev,
+                                            )
                                         }
                                         required
                                     />
@@ -244,196 +541,16 @@ export function MedicalCertificateView() {
                             <Button
                                 type="submit"
                                 colorPalette="blue"
-                                loading={isSubmitting}
+                                loading={isEditSubmitting}
                             >
-                                Crear Certificado
+                                Guardar Cambios
                             </Button>
                         </DialogFooter>
 
                         <DialogCloseTrigger />
                     </form>
                 </DialogContent>
-
-                {error && (
-                    <Box
-                        p="4"
-                        bg="red.50"
-                        color="red.700"
-                        borderRadius="md"
-                        border="1px solid"
-                        borderColor="red.200"
-                    >
-                        <Text fontWeight="bold">Error:</Text>
-                        <Text>{error}</Text>
-                    </Box>
-                )}
-
-                <Box
-                    bg="bg.panel"
-                    borderRadius="xl"
-                    boxShadow="sm"
-                    borderWidth="1px"
-                    overflow="hidden"
-                    minH="300px"
-                    position="relative"
-                >
-                    {isLoading ? (
-                        <Center h="300px">
-                            <Stack align="center" gap="4">
-                                <Spinner size="xl" color="blue.500" />
-                                <Text color="fg.muted">
-                                    Cargando certificados médicos...
-                                </Text>
-                            </Stack>
-                        </Center>
-                    ) : certificates.length === 0 ? (
-                        <Center h="300px">
-                            <Stack align="center" gap="4">
-                                <Text color="fg.muted">
-                                    No se encontraron certificados médicos.
-                                </Text>
-                                <Button
-                                    variant="ghost"
-                                    onClick={fetchCertificates}
-                                >
-                                    Reintentar
-                                </Button>
-                            </Stack>
-                        </Center>
-                    ) : (
-                        <Table.Root size="md" variant="line" interactive>
-                            <Table.Header>
-                                <Table.Row bg="bg.muted/50">
-                                    <Table.ColumnHeader py="4">
-                                        Fecha emisión
-                                    </Table.ColumnHeader>
-                                    <Table.ColumnHeader py="4">
-                                        Fecha vencimiento
-                                    </Table.ColumnHeader>
-                                    <Table.ColumnHeader py="4">
-                                        Matrícula médica
-                                    </Table.ColumnHeader>
-                                    <Table.ColumnHeader py="4">
-                                        Socio
-                                    </Table.ColumnHeader>
-                                    <Table.ColumnHeader py="4">
-                                        Validado
-                                    </Table.ColumnHeader>
-                                    <Table.ColumnHeader py="4">
-                                        Acciones
-                                    </Table.ColumnHeader>
-                                </Table.Row>
-                            </Table.Header>
-                            <Table.Body>
-                                {certificates.length === 0 ? (
-                                    <Table.Row>
-                                        <Table.Cell
-                                            colSpan={5}
-                                            textAlign="center"
-                                            color="fg.muted"
-                                            py="6"
-                                        >
-                                            No hay certificados médicos
-                                            cargados.
-                                        </Table.Cell>
-                                    </Table.Row>
-                                ) : (
-                                    certificates.data.map((certificate) => (
-                                        <Table.Row
-                                            key={certificate.id}
-                                            _hover={{ bg: 'bg.muted/30' }}
-                                        >
-                                            <Table.Cell color="fg.muted">
-                                                {new Date(
-                                                    certificate.issue_date,
-                                                ).toLocaleDateString()}
-                                            </Table.Cell>
-
-                                            <Table.Cell color="fg.muted">
-                                                {new Date(
-                                                    certificate.expiry_date,
-                                                ).toLocaleDateString()}
-                                            </Table.Cell>
-
-                                            <Table.Cell
-                                                fontWeight="semibold"
-                                                color="fg.emphasized"
-                                            >
-                                                {certificate.doctor_license}
-                                            </Table.Cell>
-
-                                            <Table.Cell color="fg.muted">
-                                                {certificate.member_id}
-                                            </Table.Cell>
-
-                                            <Table.Cell>
-                                                <Box
-                                                    display="inline-block"
-                                                    px="2"
-                                                    py="0.5"
-                                                    borderRadius="md"
-                                                    bg={
-                                                        certificate.is_validated
-                                                            ? 'green.50'
-                                                            : 'gray.50'
-                                                    }
-                                                    color={
-                                                        certificate.is_validated
-                                                            ? 'green.700'
-                                                            : 'gray.600'
-                                                    }
-                                                    fontSize="xs"
-                                                    fontWeight="bold"
-                                                >
-                                                    {certificate.is_validated
-                                                        ? 'Sí'
-                                                        : 'No'}
-                                                </Box>
-                                            </Table.Cell>
-                                            <Table.Cell w="140px">
-                                                <HStack
-                                                    gap="2"
-                                                    justify="center"
-                                                >
-                                                    <IconButton
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        aria-label="Editar certificado médico"
-                                                        onClick={() => openEditModal(certificate)}
-                                                    >
-                                                        <LuPencil />
-                                                    </IconButton>
-
-                                                    <IconButton
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        colorPalette="red"
-                                                        aria-label="Eliminar certificado médico"
-                                                        // onClick={
-
-                                                        // }
-                                                    >
-                                                        <LuTrash2 />
-                                                    </IconButton>
-                                                </HStack>
-                                            </Table.Cell>
-                                        </Table.Row>
-                                    ))
-                                )}
-                            </Table.Body>
-                        </Table.Root>
-                    )}
-                </Box>
-            </Stack>
-        </DialogRoot>
-        <DialogRoot
-            open={isEditDialogOpen}
-            onOpenChange={(e) => setIsEditDialogOpen(e.open)}
-        >
-        </DialogRoot>
-      </>
-        
+            </DialogRoot>
+        </>
     );
 }
