@@ -326,6 +326,7 @@ export function PaymentsView() {
                                                         type="button"
                                                         variant="ghost"
                                                         size="sm"
+                                                        colorPalette="red"
                                                         aria-label="Cancelar pago"
                                                         onClick={() =>
                                                             openCancelPaymentDialog(
