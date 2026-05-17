@@ -11,14 +11,15 @@ import {
     Spinner,
     Center,
     Input,
-    IconButton
+    IconButton,
 } from '@chakra-ui/react';
-import { LuPlus, LuRefreshCw,LuPencil, LuTrash2 } from 'react-icons/lu';
+import { LuPlus, LuRefreshCw, LuPencil, LuTrash2 } from 'react-icons/lu';
 import { useEffect, useState } from 'react';
 import { medicalCertificateService } from '../services/medicalCertificate';
 import type {
     MedicalCertificateDTO,
     CreateMedicalCertificateRequest,
+    UpdateMedicalCertificateRequest,
 } from '@alentapp/shared';
 import {
     DialogRoot,
@@ -41,6 +42,13 @@ export function MedicalCertificateView() {
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+    const [editingCertificate, setEditingCertificate] =
+        useState<MedicalCertificateDTO | null>(null);
+    const [editFormData, setEditFormData] =
+        useState<UpdateMedicalCertificateRequest | null>(null);
 
     const [formData, setFormData] = useState<CreateMedicalCertificateRequest>({
         issue_date: '',
@@ -87,12 +95,45 @@ export function MedicalCertificateView() {
         }
     };
 
+    const openEditModal = (certificate: MedicalCertificateDTO) => {
+        setEditingCertificate(certificate);
+        setEditFormData({
+            issue_date: certificate.issue_date,
+            expiry_date: certificate.expiry_date,
+            doctor_license: certificate.doctor_license,
+            member_id: certificate.member_id,
+        });
+
+        setIsEditDialogOpen(true);
+    };
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!editingCertificate || !editFormData) return;
+
+        setIsEditSubmitting(true);
+
+        try {
+            await medicalCertificateService.update(
+                editingCertificate.id,
+                editFormData,
+            );
+
+            setIsEditDialogOpen(false);
+            fetchCertificates();
+        } catch (err: any) {
+            alert(err.message || 'Error al actualizar el certificado médico');
+        } finally {
+            setIsEditSubmitting(false);
+        }
+    };
     useEffect(() => {
         fetchCertificates();
     }, []);
 
     return (
-        <DialogRoot
+      <><DialogRoot
             open={isDialogOpen}
             onOpenChange={(e) => setIsDialogOpen(e.open)}
         >
@@ -279,7 +320,7 @@ export function MedicalCertificateView() {
                                         Validado
                                     </Table.ColumnHeader>
                                     <Table.ColumnHeader py="4">
-                                        Acciones 
+                                        Acciones
                                     </Table.ColumnHeader>
                                 </Table.Row>
                             </Table.Header>
@@ -297,7 +338,7 @@ export function MedicalCertificateView() {
                                         </Table.Cell>
                                     </Table.Row>
                                 ) : (
-                                   certificates.data.map((certificate) => (
+                                    certificates.data.map((certificate) => (
                                         <Table.Row
                                             key={certificate.id}
                                             _hover={{ bg: 'bg.muted/30' }}
@@ -358,9 +399,8 @@ export function MedicalCertificateView() {
                                                         type="button"
                                                         variant="ghost"
                                                         size="sm"
-                                                        aria-label="Editar locker"
-                                                        // onClick={
-                                                        // }
+                                                        aria-label="Editar certificado médico"
+                                                        onClick={() => openEditModal(certificate)}
                                                     >
                                                         <LuPencil />
                                                     </IconButton>
@@ -370,9 +410,9 @@ export function MedicalCertificateView() {
                                                         variant="ghost"
                                                         size="sm"
                                                         colorPalette="red"
-                                                        aria-label="Eliminar locker"
+                                                        aria-label="Eliminar certificado médico"
                                                         // onClick={
-                                                            
+
                                                         // }
                                                     >
                                                         <LuTrash2 />
@@ -388,5 +428,12 @@ export function MedicalCertificateView() {
                 </Box>
             </Stack>
         </DialogRoot>
+        <DialogRoot
+            open={isEditDialogOpen}
+            onOpenChange={(e) => setIsEditDialogOpen(e.open)}
+        >
+        </DialogRoot>
+      </>
+        
     );
 }
