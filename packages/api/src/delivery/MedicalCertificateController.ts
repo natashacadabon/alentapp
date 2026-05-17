@@ -4,13 +4,14 @@ import { UpdateMedicalCertificateRequest } from '@alentapp/shared';
 import { CreateMedicalCertificateUseCase } from '../application/MedicalCertificate/NewMedicalCertificateUseCase.js';
 import { DeleteMedicalCertificateUseCase } from '../application/MedicalCertificate/DeleteMedicalCertificateUseCase.js';
 import { UpdateMedicalCertificateUseCase } from '../application/MedicalCertificate/UpdateMedicalCertificate.js';
-
+import { GetMedicalCertificatesUseCase } from '../application/MedicalCertificate/GetMedicalCertificateUseCase.js';
 
 export class MedicalCertificateController {
   constructor(
     private readonly createUseCase: CreateMedicalCertificateUseCase,
     private readonly deleteUseCase: DeleteMedicalCertificateUseCase,
-    private readonly updateUseCase: UpdateMedicalCertificateUseCase
+    private readonly updateUseCase: UpdateMedicalCertificateUseCase,
+    private readonly getUseCase: GetMedicalCertificatesUseCase
   ) {}
 
   async create(
@@ -71,6 +72,30 @@ export class MedicalCertificateController {
       });
     }
   }
+
+    async getAll(
+    _request: FastifyRequest,
+    reply: FastifyReply,
+  ) {
+    try {
+      const medicalCertificates =
+        await this.getUseCase.execute();
+
+      return reply.status(200).send({
+        data: medicalCertificates,
+      });
+    } catch (error: any) {
+      console.error(
+        'Error obteniendo certificados médicos:',
+        error,
+      );
+
+      return reply.status(500).send({
+        error: 'Error interno, reintente más tarde',
+      });
+    }
+  }
+
     async update(
     request: FastifyRequest<{
       Params: { id: string };
