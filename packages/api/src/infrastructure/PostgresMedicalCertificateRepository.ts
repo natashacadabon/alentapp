@@ -29,6 +29,8 @@ export class PostgresMedicalCertificateRepository
     return certificate ? this.mapToDTO(certificate) : null;
   }
 
+  
+
   async update(
     id: string,
     data: UpdateMedicalCertificateRequest,

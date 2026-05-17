@@ -24,7 +24,7 @@ import { MedicalCertificateController } from './delivery/MedicalCertificateContr
 import { DeleteMedicalCertificateUseCase } from './application/MedicalCertificate/DeleteMedicalCertificateUseCase.js';
 import { UpdateMedicalCertificateUseCase } from './application/MedicalCertificate/UpdateMedicalCertificate.js';
 import { MedicalCertificateValidator } from './domain/services/MedicalCertificateValidator.js';
-
+import { GetMedicalCertificatesUseCase } from './application/MedicalCertificate/GetMedicalCertificateUseCase.js';
 import { PaymentController } from './delivery/PaymentController.js';
 import { DeletePaymentUseCase } from './application/Payment/DeletePaymentUseCase.js';
 import { UpdatePaymentUseCase } from './application/Payment/UpdatePaymentUseCase.js';
@@ -107,6 +107,7 @@ export function buildApp() {
             createMedicalCertificateUseCase,
             deleteMedicalCertificateUseCase,
             updateMedicalCertificateUseCase,
+            getMedicalCertificateUseCase
         );
     
     //payment
@@ -144,6 +145,8 @@ export function buildApp() {
     server.post('/api/v1/medicalcertificate',medicalCertificateController.create.bind(medicalCertificateController));
     server.delete('/api/v1/medicalcertificate/:id', medicalCertificateController.delete.bind(medicalCertificateController));
     server.put('/api/v1/medicalcertificate/:id', medicalCertificateController.update.bind(medicalCertificateController));
+    server.get('/api/v1/medicalcertificate', (request, reply) =>medicalCertificateController.getAll(request, reply),
+);
 
     //Payments Endpoints
     server.get('/api/v1/payments', paymentController.getAll.bind(paymentController));

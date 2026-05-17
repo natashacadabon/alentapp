@@ -9,7 +9,7 @@
         "forceConsistentCasingInFileNames": true,
         "paths": {
             "@alentapp/shared": [
-                "../shared/index.ts"
+                "packages/shared/index.ts"
             ]
         }
     }
