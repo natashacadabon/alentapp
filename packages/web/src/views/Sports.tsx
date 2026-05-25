@@ -15,7 +15,7 @@ import {
 import { LuPlus, LuRefreshCw, LuPencil, LuTrash2 } from "react-icons/lu";
 import { useEffect, useState, useCallback } from "react";
 import { sportsService } from "../services/sports";
-import type { SportDTO, CreateSportRequest, UpdateSportRequest } from "@alentapp/shared";
+import type { SportDTO, CreateSportRequest } from "@alentapp/shared";
 import { 
   DialogRoot, 
   DialogContent, 
@@ -63,8 +63,8 @@ export function SportsView() {
     try {
       const data = await sportsService.getAll();
       setSports(data);
-    } catch (err: any) {
-      setError(err.message || "Error al cargar los deportes");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al cargar los deportes");
     } finally {
       setIsLoading(false);
     }
@@ -72,12 +72,14 @@ export function SportsView() {
 
   const openCreateModal = () => {
     setFormData({ name: "", description: "", max_capacity: 1, additional_price: 0, requires_medical_certificate: false });
+    setError(null);
     setIsCreateDialogOpen(true);
   };
 
   const openEditModal = (sport: SportDTO) => {
     setEditingSportId(sport.id);
     setEditFormData(sport);
+    setError(null);
     setIsEditDialogOpen(true);
   };
 
@@ -94,8 +96,8 @@ export function SportsView() {
       await sportsService.create(formData);
       setIsCreateDialogOpen(false);
       fetchSports();
-    } catch (err: any) {
-      alert(err.message || "Error al guardar el deporte");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message :"Error al guardar el deporte");
     } finally {
       setIsSubmitting(false);
     }
@@ -112,8 +114,8 @@ export function SportsView() {
         });
         setIsEditDialogOpen(false);
         fetchSports();
-    } catch (err: any) {
-        alert(err.message || "Error al actualizar el deporte");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Error al actualizar el deporte");
     } finally {
         setIsEditSubmitting(false);
     }
@@ -127,15 +129,18 @@ export function SportsView() {
       await sportsService.delete(deletingSport.id);
       setIsDeleteDialogOpen(false);
       fetchSports();
-    } catch (err: any) {
-      setDeleteError(err.message || "Error al eliminar el deporte");
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : "Error al eliminar el deporte");
     } finally {
       setIsDeleteSubmitting(false);
     }
   };
 
   useEffect(() => {
-    fetchSports();
+    const load = async () => {
+        await fetchSports();
+    };
+    load();
   }, [fetchSports]);
 
   return (
@@ -178,6 +183,7 @@ export function SportsView() {
                   <Input 
                     type="number"
                     min={0}
+                    step="0.01"
                     placeholder="Ej. 500" 
                     value={formData.additional_price}
                     onChange={(e) => setFormData({ ...formData, additional_price: Number(e.target.value) })}
