@@ -98,5 +98,21 @@ describe('CreateMedicalCertificateUseCase', () => {
         expect(mockMedicalCertificateRepo.create).not.toHaveBeenCalled();
     });
 
+    //Cuarto test: Validación de fechas. Verifica que no se pueda crear un certificado si la fecha de emisión es posterior a la fecha de expiración.
+    it('debe lanzar error si la fecha de emisión es posterior a la fecha de expiración', async () => {
+        const mockRequest: CreateMedicalCertificateRequest = {
+            issue_date: '2026-12-26',
+            expiry_date: '2026-05-26',
+            doctor_license: 'MN123456',
+            is_validated: true,
+            member_id: 'member-1',
+        };
+
+
+        await expect(createMedicalCertificateUseCase.execute(mockRequest)).rejects.toThrow();
+
+        // Verificamos que no se haya intentado guardar nada.
+        expect(mockMedicalCertificateRepo.create).not.toHaveBeenCalled();
+    });
 
 });
