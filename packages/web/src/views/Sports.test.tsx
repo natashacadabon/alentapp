@@ -67,5 +67,40 @@ describe('SportsView - Create', () => {
     // Validamos el segundo deporte
     expect(screen.getByText('Natación')).toBeInTheDocument();
   });
+
+  //unit 3 - Mostrar error si el servicio falla
+  it('debe renderizar un mensaje de error si el servicio backend falla', async () => {
+    // Simulamos un error 500
+    vi.mocked(sportsService.getAll).mockRejectedValueOnce(new Error('Servidor caído'));
+
+    renderWithProviders(<SportsView />);
+
+    // Esperamos a que se muestre el texto de error en pantalla
+    await waitFor(() => {
+      expect(screen.getByText('Servidor caído')).toBeInTheDocument();
+    });
+  });
+
+  //unit 4 - Abrir modal de creación al hacer clic
+  it('debe abrir el modal de creación al hacer clic en Agregar Deporte', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+
+    // Simulamos lista vacía para que no haya interferencias
+    vi.mocked(sportsService.getAll).mockResolvedValue([]);
+
+    renderWithProviders(<SportsView />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando deportes...')).not.toBeInTheDocument();
+    });
+
+    // Hacemos clic en el botón de agregar
+    const addButton = screen.getByText(/Agregar Deporte/i);
+    await user.click(addButton);
+
+    // Verificamos que el título del modal aparece
+    expect(screen.getByText('Agregar Nuevo Deporte')).toBeInTheDocument();
+  });
+
   
 });
