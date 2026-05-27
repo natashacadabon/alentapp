@@ -54,7 +54,7 @@ describe('CreateSportUseCase', () => {
         expect(result.name).toBe('Fútbol');
     });
 
-    // unit 8 
+    //unit 8
     it('debe lanzar error si el nombre ya existe', async () => {
         const mockRequest: CreateSportRequest = {
             name: 'Fútbol',
@@ -64,13 +64,31 @@ describe('CreateSportUseCase', () => {
             requires_medical_certificate: false,
         };
 
+        //simula el fallo 
         vi.mocked(mockSportValidator.validateNameIsUnique).mockRejectedValueOnce(
             new Error('Ya existe un deporte con ese nombre')
         );
-
+        //ejecuta el caso de uso con los datos de prueba y espera que falle
         await expect(useCase.execute(mockRequest)).rejects.toThrow('Ya existe un deporte con ese nombre');
+        //asegura que el repo de sport no haya intentado guardar nada en la bdd
         expect(mockSportRepo.create).not.toHaveBeenCalled();
     });
 
-    
+    //unit 9
+    it('debe lanzar error si la capacidad máxima es inválida', async () => {
+        const mockRequest: CreateSportRequest = {
+            name: 'Fútbol',
+            description: '',
+            max_capacity: 0,
+            additional_price: 500,
+            requires_medical_certificate: false,
+        };
+
+        vi.mocked(mockSportValidator.validateMaxCapacity).mockImplementationOnce(() => {
+            throw new Error('La capacidad máxima debe ser mayor a cero');
+        });
+
+        await expect(useCase.execute(mockRequest)).rejects.toThrow('La capacidad máxima debe ser mayor a cero');
+        expect(mockSportRepo.create).not.toHaveBeenCalled();
+    });
 });
