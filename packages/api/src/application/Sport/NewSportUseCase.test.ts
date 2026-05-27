@@ -54,5 +54,23 @@ describe('CreateSportUseCase', () => {
         expect(result.name).toBe('Fútbol');
     });
 
+    // unit 8 
+    it('debe lanzar error si el nombre ya existe', async () => {
+        const mockRequest: CreateSportRequest = {
+            name: 'Fútbol',
+            description: '',
+            max_capacity: 22,
+            additional_price: 500,
+            requires_medical_certificate: false,
+        };
+
+        vi.mocked(mockSportValidator.validateNameIsUnique).mockRejectedValueOnce(
+            new Error('Ya existe un deporte con ese nombre')
+        );
+
+        await expect(useCase.execute(mockRequest)).rejects.toThrow('Ya existe un deporte con ese nombre');
+        expect(mockSportRepo.create).not.toHaveBeenCalled();
+    });
+
     
 });
