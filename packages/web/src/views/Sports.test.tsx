@@ -146,5 +146,47 @@ describe('SportsView - Create', () => {
     }));
   });
 
+  // unit 6 - Mostrar error cuando el backend rechaza la creación
+  it('debe mostrar error cuando el backend rechaza la creación', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+
+    // Interceptamos el alert del navegador para verificar el mensaje de error
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    vi.mocked(sportsService.getAll).mockResolvedValue([]);
+    //mock simula que el backend rechaza la creación con ese erro
+    vi.mocked(sportsService.create).mockRejectedValueOnce(new Error('Ya existe un deporte con ese nombre'));
+
+    renderWithProviders(<SportsView />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando deportes...')).not.toBeInTheDocument();
+    });
+
+    const addButton = screen.getByText(/Agregar Deporte/i);
+    await user.click(addButton);
+
+    await user.type(screen.getByPlaceholderText('Ej. Fútbol'), 'Fútbol');
+
+    const capacidadInput = screen.getByPlaceholderText('Ej. 20');
+    await user.clear(capacidadInput);
+    await user.type(capacidadInput, '22');
+
+    const precioInput = screen.getByPlaceholderText('Ej. 500');
+    await user.clear(precioInput);
+    await user.type(precioInput, '500');
+
+    // Clic en submit
+    const submitButton = screen.getByText('Crear Deporte');
+    await user.click(submitButton);
+
+    // Verificamos que el alert fue llamado con el mensaje correcto
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith('Ya existe un deporte con ese nombre');
+    });
+
+    alertSpy.mockRestore();
+  });
+
   
 });
