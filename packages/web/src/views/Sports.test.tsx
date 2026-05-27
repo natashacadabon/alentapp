@@ -24,7 +24,7 @@ describe('SportsView - Create', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
-
+  
   //unit 1- Mostrar estado de carga y tabla vacía
   it('debe mostrar el estado de carga y luego renderizar tabla vacía', async () => {
     // Simulamos que el backend no tiene deportes
@@ -44,5 +44,28 @@ describe('SportsView - Create', () => {
     expect(screen.getByText('No se encontraron deportes.')).toBeInTheDocument();
   });
 
+  //unit 2 - Renderizar lista de deportes exitosa
+  it('debe renderizar la lista de deportes si el backend responde exitosamente', async () => {
+    const mockSports = [
+      { id: '1', name: 'Fútbol', description: 'Fútbol 11', max_capacity: 22, additional_price: 500, requires_medical_certificate: true },
+      { id: '2', name: 'Natación', description: null, max_capacity: 15, additional_price: 0, requires_medical_certificate: false },
+    ] as SportDTO[];
+
+    vi.mocked(sportsService.getAll).mockResolvedValueOnce(mockSports);
+
+    renderWithProviders(<SportsView />);
+
+    // Esperamos a que los datos se inyecten en el DOM
+    await waitFor(() => {
+      expect(screen.getByText('Fútbol')).toBeInTheDocument();
+    });
+
+    // Validamos el primer deporte
+    expect(screen.getByText('Fútbol 11')).toBeInTheDocument();
+    expect(screen.getByText('22')).toBeInTheDocument();
+
+    // Validamos el segundo deporte
+    expect(screen.getByText('Natación')).toBeInTheDocument();
+  });
   
 });
