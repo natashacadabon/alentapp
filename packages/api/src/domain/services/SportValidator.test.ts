@@ -15,6 +15,7 @@ describe('SportValidator', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
+
     describe('validateMaxCapacity', () => {
         //unit 10
         it('debe lanzar error si max_capacity es invalida', () => {
@@ -27,6 +28,27 @@ describe('SportValidator', () => {
         });
     })
     
+    describe('validateNameIsUnique', () => {
+        //unit 12
+        it('debe lanzar error si el nombre ya existe', async () => {
+            //.mockResolvedValueOnce() simula que la base de datos SÍ encontró un deporte 
+            // con ese nombre y devuelve sus datos
+            vi.mocked(mockRepo.findByName).mockResolvedValueOnce({
+                id: 'uuid-1', name: 'Futbol', description: '', 
+                max_capacity: 22, additional_price: 500,
+                requires_medical_certificate: true
+            });
 
-    
+            await expect(validator.validateNameIsUnique('Futbol'))
+                .rejects.toThrow('Ya existe un deporte con ese nombre');
+        });
+
+        //unit 13
+        it('no debe lanzar error si el nombre no existe', async () => {
+            vi.mocked(mockRepo.findByName).mockResolvedValueOnce(null);
+
+            await expect(validator.validateNameIsUnique('Nuevo'))
+                .resolves.not.toThrow();
+        });
+    }); 
 });
