@@ -92,7 +92,7 @@ model Sport {
   name                         String  @unique
   description                  String?
   max_capacity                 Int
-  additional_price             Float
+  additional_price             Decimal @db.Decimal(10,2)
   requires_medical_certificate Boolean
 
   @@map("sports")

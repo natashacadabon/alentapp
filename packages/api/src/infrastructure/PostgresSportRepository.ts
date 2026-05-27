@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/client/client.js';
+import { PrismaClient, Prisma } from '../generated/client/client.js';
 import { SportRepository } from '../domain/SportRepository.js';
 import { SportDTO, CreateSportRequest, UpdateSportRequest } from '@alentapp/shared';
 
@@ -16,7 +16,7 @@ type DBSport = {
     name: string;
     description: string | null;
     max_capacity: number;
-    additional_price: number;
+    additional_price: Prisma.Decimal;
     requires_medical_certificate: boolean;
 };
 
@@ -82,7 +82,7 @@ export class PostgresSportRepository implements SportRepository {
             name: sport.name,
             description: sport.description ?? undefined,
             max_capacity: sport.max_capacity,
-            additional_price: sport.additional_price,
+            additional_price: Number(sport.additional_price),
             requires_medical_certificate: sport.requires_medical_certificate,
         };
     }
