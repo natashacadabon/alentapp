@@ -102,5 +102,49 @@ describe('SportsView - Create', () => {
     expect(screen.getByText('Agregar Nuevo Deporte')).toBeInTheDocument();
   });
 
+  //unit 5 - Crear un deporte mediante el formulario
+  it('debe permitir crear un nuevo deporte mediante el formulario', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+
+    // Configuramos el mock para que devuelva algo en todas las llamadas, no solo en la primera
+    vi.mocked(sportsService.getAll).mockResolvedValue([]);
+    vi.mocked(sportsService.create).mockResolvedValueOnce({
+      id: '3', name: 'Voley', description: '', max_capacity: 12, additional_price: 200, requires_medical_certificate: false
+    });
+
+    renderWithProviders(<SportsView />);
+
+    // Esperamos que termine de cargar
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando deportes...')).not.toBeInTheDocument();
+    });
+
+    // Hacemos clic en "Agregar Deporte"
+    const addButton = screen.getByText(/Agregar Deporte/i);
+    await user.click(addButton);
+
+    // Llenamos el formulario
+    await user.type(screen.getByPlaceholderText('Ej. Fútbol'), 'Voley');
+
+    const capacidadInput = screen.getByPlaceholderText('Ej. 20');
+    await user.clear(capacidadInput); //porque arranca con el valor 1 por defecto en form
+    await user.type(capacidadInput, '12');
+
+    const precioInput = screen.getByPlaceholderText('Ej. 500');
+    await user.clear(precioInput);
+    await user.type(precioInput, '200');
+
+    // Clic en submit
+    const submitButton = screen.getByText('Crear Deporte');
+    await user.click(submitButton);
+
+    // Verificamos que el servicio create fue llamado con los datos correctos
+    expect(sportsService.create).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'Voley',
+      max_capacity: 12,
+      additional_price: 200,
+    }));
+  });
+
   
 });
