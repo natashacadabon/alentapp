@@ -1,0 +1,87 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { CreateMedicalCertificateUseCase } from './NewMedicalCertificateUseCase.js';
+import { MedicalCertificateRepository } from '../../domain/MedicalCertificateRepository.js';
+import { MemberRepository } from '../../domain/MemberRepository.js';
+import { CreateMedicalCertificateRequest } from '@alentapp/shared';
+
+
+describe('CreateMedicalCertificateUseCase', () => {
+    
+    // 1. Creamos los mocks de los repositorios de medicalCertificate y Member.
+    const mockMedicalCertificateRepo = {
+        create: vi.fn(), // Simulamos el método create.
+    } as unknown as MedicalCertificateRepository;
+    const mockMemberRepo = {
+        findById: vi.fn(),
+    } as unknown as MemberRepository;
+
+    // 2. Creamos una instancia del caso de uso con el repositorio mockeado.
+    const createMedicalCertificateUseCase = new CreateMedicalCertificateUseCase(mockMedicalCertificateRepo, mockMemberRepo);
+
+    // Limpia las llamadas anteriores de los mocks antes de cada prueba para evitar interferencias entre pruebas.
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    // Primer test: caso exitoso. Verificamos que se crea un certificado médico correctamente.
+    it('debe crear un certificado médico exitoso si los datos son válidos', async () => {
+        const mockRequest: CreateMedicalCertificateRequest = {
+            issue_date: '2026-05-26',
+            expiry_date: '2026-12-26',
+            doctor_license: 'MN123456',
+            is_validated: true,
+            member_id: 'member-1',
+        };
+
+        // Simulamos la respuesta del repositorio.
+        vi.mocked(mockMedicalCertificateRepo.create).mockResolvedValueOnce({
+            id: 'certificate-1',
+            ...mockRequest,
+            created_at: '2026-05-26T00:00:00.000Z',
+            updated_at: '2026-05-26T00:00:00.000Z',
+        });
+
+        const result = await createMedicalCertificateUseCase.execute(mockRequest);
+
+        // Verificamos que el método create del repositorio fue llamado con los datos correctos.
+        expect(mockMedicalCertificateRepo.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                issue_date: '2026-05-26',
+                expiry_date: '2026-12-26',
+                doctor_license: 'MN123456',
+                is_validated: true,
+                member_id: 'member-1',
+            })
+        );
+
+        // Verificamos que el resultado tenga el id esperado.
+        expect(result.id).toBe('certificate-1');
+
+        // Verificamos que el resultado conserve la matrícula del médico.
+        expect(result.doctor_license).toBe('MN123456');
+
+        // Verificamos que el resultado esté asociado al socio correcto.
+        expect(result.member_id).toBe('member-1');
+    });
+
+
+    //Segundo test: Validacion de la licencia del doctor.
+    it('debe lanzar un error si la licencia del doctor no existe', async () => {
+        const mockRequest: CreateMedicalCertificateRequest = {
+            issue_date: '2026-05-26',
+            expiry_date: '2026-12-26',
+            doctor_license: '',
+            is_validated: true,
+            member_id: 'member-1',
+        };
+        
+        await expect(createMedicalCertificateUseCase.execute(mockRequest)).rejects.toThrow();
+
+        // Verificamos que no se haya llamado al repositorio. El certificado no debe guardarse.
+        expect(mockMedicalCertificateRepo.create).not.toHaveBeenCalled();
+    });
+
+
+
+
+});
