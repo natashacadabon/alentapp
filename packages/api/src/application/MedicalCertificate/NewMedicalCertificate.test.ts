@@ -115,4 +115,25 @@ describe('CreateMedicalCertificateUseCase', () => {
         expect(mockMedicalCertificateRepo.create).not.toHaveBeenCalled();
     });
 
+    //Quinto test: Verificar si el socio existe antes de crear el certificado. 
+    it('debe lanzar error si el socio no existe', async () => {
+        const mockRequest: CreateMedicalCertificateRequest = {
+            issue_date: '2026-05-26',
+            expiry_date: '2026-12-26',
+            doctor_license: 'MN123456',
+            is_validated: true,
+            member_id: 'member-1',
+        };
+
+        // Simulamos que el socio no existe.
+        vi.mocked(mockMemberRepo.findById).mockResolvedValueOnce(null);
+
+        await expect(createMedicalCertificateUseCase.execute(mockRequest)).rejects.toThrow();
+
+        // Verificamos que buscó al socio.
+        expect(mockMemberRepo.findById).toHaveBeenCalledWith('member-1');
+
+        // Como el socio no existe, no se debe crear el certificado.
+        expect(mockMedicalCertificateRepo.create).not.toHaveBeenCalled();
+    });
 });
