@@ -81,7 +81,22 @@ describe('CreateMedicalCertificateUseCase', () => {
         expect(mockMedicalCertificateRepo.create).not.toHaveBeenCalled();
     });
 
+    //Tercer test: Validación de member_id. Verifica que no se pueda crear un certificado si no está asociado a ningún socio.
+     it('debe lanzar error si falta member_id', async () => {
 
+        const mockRequest: CreateMedicalCertificateRequest = {
+            issue_date: '2026-05-26',
+            expiry_date: '2026-12-26',
+            doctor_license: 'MN123456',
+            is_validated: true,
+            member_id: '',
+        };
+
+        await expect(createMedicalCertificateUseCase.execute(mockRequest)).rejects.toThrow();
+
+        // Verificamos que no se haya intentado guardar nada.
+        expect(mockMedicalCertificateRepo.create).not.toHaveBeenCalled();
+    });
 
 
 });
