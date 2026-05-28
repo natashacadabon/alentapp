@@ -122,6 +122,19 @@ vi.mock('../infrastructure/PostgresPaymentRepository.js', () => {
                     status: data.status,
                 };
             }
+
+            async cancel(id: string) {
+                return {
+                    id,
+                    member_id: 'member-1',
+                    amount: 15000,
+                    month: 5,
+                    year: 2026,
+                    due_date: '2099-06-01',
+                    payment_date: null,
+                    status: 'Cancelado',
+                };
+            }
         },
     };
 });
@@ -288,6 +301,33 @@ describe('Payment API Integration Tests', () => {
             );
             // verifica que la fecha de pago se haya completado correctamente.
             expect(body.data.payment_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        });
+    });
+
+    describe('DELETE /api/v1/payments/:id', () => {
+        // Test 6: Verifica cancelacion logica del pago.
+        it('debe cancelar un pago existente y devolver estado Cancelado', async () => {
+            // invoca el endpoint de cancelación para el pago existente.
+            const response = await app.inject({
+                method: 'DELETE',
+                url: '/api/v1/payments/payment-1',
+            });
+            // respuesta exitosa.
+            expect(response.statusCode).toBe(200);
+            // parseo del body para validar estructura de respuesta y campos actualizados.
+            const body = JSON.parse(response.payload);
+            // verifica que el estado se haya actualizado a Cancelado y payment_date siga siendo null.
+            expect(body.data).toEqual(
+                expect.objectContaining({
+                    id: 'payment-1',
+                    member_id: 'member-1',
+                    amount: 15000,
+                    month: 5,
+                    year: 2026,
+                    payment_date: null,
+                    status: 'Cancelado',
+                }),
+            );
         });
     });
 });
