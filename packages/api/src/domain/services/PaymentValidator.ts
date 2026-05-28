@@ -1,4 +1,3 @@
-import { PaymentDTO } from '../../../../shared/index.js';
 import { PaymentRepository } from '../PaymentRepository.js';
 import {
     PaymentDTO,
