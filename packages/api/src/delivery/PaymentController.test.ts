@@ -52,6 +52,7 @@ describe('PaymentController', () => {
     });
 
     describe('create', () => {
+        // Test 1: Verifica que create devuelve 201 con el pago creado.
         it('debe devolver 201 y el pago creado', async () => {
             const createdPayment = {
                 id: 'payment-1',
@@ -79,6 +80,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 2: Verifica que create devuelve 400 cuando los datos son inválidos.
         it('debe devolver 400 si los datos son inválidos', async () => {
             mockCreatePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('El monto debe ser mayor a cero'),
@@ -92,6 +94,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 3: Verifica que create devuelve 409 si ya existe el pago para el miembro, mes y año.
         it('debe devolver 409 si ya existe un pago para el mismo miembro, mes y año', async () => {
             mockCreatePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error(
@@ -107,6 +110,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 4: Verifica que create devuelve 404 cuando el miembro no existe.
         it('debe devolver 404 si el miembro no existe', async () => {
             mockCreatePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('El miembro especificado no existe'),
@@ -120,6 +124,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 5: Verifica que create devuelve 500 ante errores no controlados.
         it('debe devolver 500 ante un error no controlado', async () => {
             mockCreatePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('Error inesperado'),
@@ -135,6 +140,7 @@ describe('PaymentController', () => {
     });
 
     describe('getAll', () => {
+        // Test 6: Verifica que getAll devuelve 200 con la lista de pagos.
         it('debe devolver 200 y la lista de pagos', async () => {
             const payments = [
                 {
@@ -160,6 +166,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 7: Verifica que getAll devuelve 500 cuando falla el listado.
         it('debe devolver 500 si falla el listado de pagos', async () => {
             mockGetPaymentsUseCase.execute.mockRejectedValueOnce(
                 new Error('Error inesperado'),
@@ -175,6 +182,7 @@ describe('PaymentController', () => {
     });
 
     describe('cancel', () => {
+        // Test 8: Verifica que cancel devuelve 200 con el pago cancelado.
         it('debe devolver 200 y el pago cancelado', async () => {
             const canceledPayment = {
                 id: 'payment-1',
@@ -202,6 +210,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 9: Verifica que cancel devuelve 404 cuando el pago no existe.
         it('debe devolver 404 si el pago no existe', async () => {
             mockDeletePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('Pago no encontrado'),
@@ -215,6 +224,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 10: Verifica que cancel devuelve 409 cuando el pago ya está cancelado.
         it('debe devolver 409 si el pago ya está cancelado', async () => {
             mockDeletePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('El pago ya se encuentra cancelado'),
@@ -228,6 +238,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 11: Verifica que cancel devuelve 500 ante errores no controlados.
         it('debe devolver 500 ante un error no controlado al cancelar', async () => {
             mockDeletePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('Error inesperado'),
@@ -243,6 +254,7 @@ describe('PaymentController', () => {
     });
 
     describe('update', () => {
+        // Test 12: Verifica que update devuelve 200 con el pago actualizado.
         it('debe devolver 200 y el pago actualizado', async () => {
             const request = {
                 ...baseRequest,
@@ -279,6 +291,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 13: Verifica que update devuelve 400 cuando el estado es inválido.
         it('debe devolver 400 si el estado es inválido', async () => {
             mockUpdatePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('Estado inválido'),
@@ -292,6 +305,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 14: Verifica que update devuelve 400 al intentar actualizar un campo estructural.
         it('debe devolver 400 si se intenta actualizar un campo estructural', async () => {
             mockUpdatePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('No se puede actualizar el campo amount'),
@@ -305,6 +319,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 15: Verifica que update devuelve 404 cuando el pago no existe.
         it('debe devolver 404 si el pago no existe', async () => {
             mockUpdatePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('Pago no encontrado'),
@@ -318,6 +333,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 16: Verifica que update devuelve 409 si el pago cancelado no puede actualizarse.
         it('debe devolver 409 si el pago cancelado no puede actualizarse', async () => {
             mockUpdatePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('No se puede actualizar un pago cancelado'),
@@ -331,6 +347,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 17: Verifica que update devuelve 409 si el pago pagado no puede actualizarse.
         it('debe devolver 409 si el pago pagado no puede actualizarse', async () => {
             mockUpdatePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('No se puede actualizar un pago ya pagado'),
@@ -344,6 +361,7 @@ describe('PaymentController', () => {
             });
         });
 
+        // Test 18: Verifica que update devuelve 500 ante errores no controlados.
         it('debe devolver 500 ante un error no controlado al actualizar', async () => {
             mockUpdatePaymentUseCase.execute.mockRejectedValueOnce(
                 new Error('Error inesperado'),
