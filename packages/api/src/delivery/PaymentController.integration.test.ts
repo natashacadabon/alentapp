@@ -94,6 +94,34 @@ vi.mock('../infrastructure/PostgresPaymentRepository.js', () => {
                     },
                 ];
             }
+
+            async findById(id: string) {
+                if (id !== 'payment-1') return null;
+
+                return {
+                    id: 'payment-1',
+                    member_id: 'member-1',
+                    amount: 15000,
+                    month: 5,
+                    year: 2026,
+                    due_date: '2099-06-01',
+                    payment_date: null,
+                    status: 'Pendiente',
+                };
+            }
+
+            async update(id: string, data: any) {
+                return {
+                    id,
+                    member_id: 'member-1',
+                    amount: 15000,
+                    month: 5,
+                    year: 2026,
+                    due_date: '2099-06-01',
+                    payment_date: data.payment_date,
+                    status: data.status,
+                };
+            }
         },
     };
 });
@@ -230,6 +258,36 @@ describe('Payment API Integration Tests', () => {
                     },
                 }),
             );
+        });
+    });
+
+    describe('PATCH /api/v1/payments/:id', () => {
+        // Test 5: Verifica actualizacion exitosa a estado Pagado.
+        it('debe actualizar un pago a Pagado y completar payment_date', async () => {
+            // invoca el endpoint de actualización para cambiar el estado a Pagado.
+            const response = await app.inject({
+                method: 'PATCH',
+                url: '/api/v1/payments/payment-1',
+                payload: {
+                    status: 'Pagado',
+                },
+            });
+            // respuesta exitosa.
+            expect(response.statusCode).toBe(200);
+            // parseo del body para validar estructura de respuesta y campos actualizados.
+            const body = JSON.parse(response.payload);
+            expect(body.data).toEqual(
+                expect.objectContaining({
+                    id: 'payment-1',
+                    member_id: 'member-1',
+                    amount: 15000,
+                    month: 5,
+                    year: 2026,
+                    status: 'Pagado',
+                }),
+            );
+            // verifica que la fecha de pago se haya completado correctamente.
+            expect(body.data.payment_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
         });
     });
 });
