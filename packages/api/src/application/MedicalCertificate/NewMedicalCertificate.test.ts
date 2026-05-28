@@ -29,19 +29,34 @@ describe('CreateMedicalCertificateUseCase', () => {
             issue_date: '2026-05-26',
             expiry_date: '2026-12-26',
             doctor_license: 'MN123456',
-            is_validated: true,
             member_id: 'member-1',
         };
 
-        // Simulamos la respuesta del repositorio.
+
+        // Simulamos la respuesta de los repositorios.
+        vi.mocked(mockMemberRepo.findById).mockResolvedValueOnce({
+            id: 'member-1',
+            name: 'Juan',
+            dni: '12345678',
+            email: 'juan@test.com',
+            birthdate: '1990-01-01',
+            category: 'Pleno',
+            status: 'Activo',
+            created_at: '2020-01-01T00:00:00.000Z',
+        });
+
         vi.mocked(mockMedicalCertificateRepo.create).mockResolvedValueOnce({
             id: 'certificate-1',
             ...mockRequest,
+            is_validated: false,
             created_at: '2026-05-26T00:00:00.000Z',
             updated_at: '2026-05-26T00:00:00.000Z',
         });
 
         const result = await createMedicalCertificateUseCase.execute(mockRequest);
+        
+        // Verificamos que primero buscó al socio.
+        expect(mockMemberRepo.findById).toHaveBeenCalledWith('member-1');
 
         // Verificamos que el método create del repositorio fue llamado con los datos correctos.
         expect(mockMedicalCertificateRepo.create).toHaveBeenCalledWith(
@@ -49,7 +64,7 @@ describe('CreateMedicalCertificateUseCase', () => {
                 issue_date: '2026-05-26',
                 expiry_date: '2026-12-26',
                 doctor_license: 'MN123456',
-                is_validated: true,
+                is_validated: false,
                 member_id: 'member-1',
             })
         );
@@ -71,7 +86,6 @@ describe('CreateMedicalCertificateUseCase', () => {
             issue_date: '2026-05-26',
             expiry_date: '2026-12-26',
             doctor_license: '',
-            is_validated: true,
             member_id: 'member-1',
         };
         
@@ -88,7 +102,6 @@ describe('CreateMedicalCertificateUseCase', () => {
             issue_date: '2026-05-26',
             expiry_date: '2026-12-26',
             doctor_license: 'MN123456',
-            is_validated: true,
             member_id: '',
         };
 
@@ -104,7 +117,6 @@ describe('CreateMedicalCertificateUseCase', () => {
             issue_date: '2026-12-26',
             expiry_date: '2026-05-26',
             doctor_license: 'MN123456',
-            is_validated: true,
             member_id: 'member-1',
         };
 
@@ -121,7 +133,6 @@ describe('CreateMedicalCertificateUseCase', () => {
             issue_date: '2026-05-26',
             expiry_date: '2026-12-26',
             doctor_license: 'MN123456',
-            is_validated: true,
             member_id: 'member-1',
         };
 
