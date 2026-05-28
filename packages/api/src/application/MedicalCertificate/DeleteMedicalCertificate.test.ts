@@ -64,4 +64,21 @@ describe('DeleteMedicalCertificateUseCase', () => {
         expect(repository.delete).toHaveBeenCalledWith(certificateId);
     });
 
+
+    // Tercer test: Verifica qué pasa cuando el certificado no existe
+    it('debería lanzar error si el certificado médico no existe', async () => {
+
+        const certificateId = 'certificate-inexistente';
+
+        vi.mocked(repository.findById).mockResolvedValue(null);
+
+        // Esperamos que al ejecutar el caso de uso se lance un error
+        await expect(useCase.execute(certificateId)).rejects.toThrow(
+        'Medical certificate not found'
+        );
+
+        // Verificamos que delete no haya sido llamado
+        expect(repository.delete).not.toHaveBeenCalled();
+    });
+
 });
