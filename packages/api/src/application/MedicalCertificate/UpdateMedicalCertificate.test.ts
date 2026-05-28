@@ -13,7 +13,7 @@ describe('UpdateMedicalCertificateUseCase', () => {
 
     beforeEach(() => {
         repository = {
-            findById: vi.fn(),
+            findActiveByMemberId: vi.fn(),
             update: vi.fn(),
         } as unknown as MedicalCertificateRepository;
 
@@ -57,13 +57,13 @@ describe('UpdateMedicalCertificateUseCase', () => {
             is_validated: true,
         };
 
-        vi.mocked(repository.findById).mockResolvedValue(existingCertificate);
+        vi.mocked(repository.findActiveByMemberId).mockResolvedValue(existingCertificate);
 
         vi.mocked(repository.update).mockResolvedValue(updatedCertificate);
 
         const result = await useCase.execute(id, updateRequest);
 
-        expect(repository.findById).toHaveBeenCalledWith(id);
+        expect(repository.findActiveByMemberId).toHaveBeenCalledWith(id);
 
         expect(validator.validateDates).toHaveBeenCalledWith(updateRequest);
 
@@ -95,7 +95,7 @@ describe('UpdateMedicalCertificateUseCase', () => {
         };
 
         // Simulamos que el certificado existe
-        vi.mocked(repository.findById).mockResolvedValue(
+        vi.mocked(repository.findActiveByMemberId).mockResolvedValue(
         existingCertificate,
         );
 
@@ -105,7 +105,7 @@ describe('UpdateMedicalCertificateUseCase', () => {
         );
 
         // Verificamos que se haya buscado el certificado
-        expect(repository.findById).toHaveBeenCalledWith(
+        expect(repository.findActiveByMemberId).toHaveBeenCalledWith(
         certificateId,
         );
 
@@ -137,9 +137,13 @@ describe('UpdateMedicalCertificateUseCase', () => {
         };
 
         // Simulamos que el certificado existe
-        vi.mocked(repository.findById).mockResolvedValue(
+        vi.mocked(repository.findActiveByMemberId).mockResolvedValue(
         existingCertificate,
         );
+
+        vi.mocked(validator.validateDoctorLicense).mockImplementation(() => {
+            throw new Error('La matrícula del médico es obligatoria');
+        });
 
         // Esperamos que el use case lance el error del validador validateDoctorLicense
         await expect(
@@ -147,7 +151,7 @@ describe('UpdateMedicalCertificateUseCase', () => {
         ).rejects.toThrow('La matrícula del médico es obligatoria');
 
         // Verificamos que se haya buscado el certificado
-        expect(repository.findById).toHaveBeenCalledWith(
+        expect(repository.findActiveByMemberId).toHaveBeenCalledWith(
         certificateId,
         );
 
