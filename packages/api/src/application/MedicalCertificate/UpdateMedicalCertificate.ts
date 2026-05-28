@@ -9,7 +9,7 @@ export class UpdateMedicalCertificateUseCase {
   ) {}
 
   async execute(id: string, data: UpdateMedicalCertificateRequest) {
-    const certificate = await this.repository.findById(id);
+    const certificate = await this.repository.findActiveByMemberId(id);
 
     if (!certificate) {
       throw new Error('El certificado indicado no se encuentra registrado');
