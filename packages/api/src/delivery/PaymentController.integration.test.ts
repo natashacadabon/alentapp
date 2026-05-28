@@ -35,7 +35,28 @@ vi.mock('../infrastructure/PostgresMemberRepository.js', () => {
 vi.mock('../infrastructure/PostgresPaymentRepository.js', () => {
     return {
         PostgresPaymentRepository: class {
-            async findByMemberMonthYear() {
+            async findByMemberMonthYear(
+                member_id: string,
+                month: number,
+                year: number,
+            ) {
+                if (
+                    member_id === 'member-1' &&
+                    month === 6 &&
+                    year === 2026
+                ) {
+                    return {
+                        id: 'payment-duplicado',
+                        member_id,
+                        amount: 15000,
+                        month,
+                        year,
+                        due_date: '2026-06-01',
+                        payment_date: null,
+                        status: 'Pendiente',
+                    };
+                }
+
                 return null;
             }
 
@@ -134,6 +155,31 @@ describe('Payment API Integration Tests', () => {
             // mensaje de error de negocio esperado.
             const body = JSON.parse(response.payload);
             expect(body.error).toBe('El miembro especificado no existe');
+        });
+
+        // Test 3: Verifica que no se permita duplicar socio, mes y año.
+        it('debe retornar 409 si ya existe un pago para el mismo socio, mes y año', async () => {
+            //payload que coincide con el mock de pago duplicado para member-1, mes 6 y año 2026.
+            const payload: CreatePaymentRequest = {
+                member_id: 'member-1',
+                amount: 15000,
+                month: 6,
+                year: 2026,
+                due_date: '2026-06-01',
+            };
+            // invoca el endpoint de creación.
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/v1/payments',
+                payload,
+            });
+            // error esperado por regla de negocio de pago único por socio, mes y año.
+            expect(response.statusCode).toBe(409);
+            // mensaje de error de negocio esperado.
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe(
+                'Ya existe un pago para este miembro en el mes y año especificados',
+            );
         });
     });
 });
