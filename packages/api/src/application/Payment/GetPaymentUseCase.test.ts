@@ -13,6 +13,7 @@ describe('GetPaymentsUseCase', () => {
         vi.clearAllMocks();
     });
 
+    // Test 1: Verifica que execute retorna la lista de pagos obtenida del repositorio.
     it('debe retornar la lista de pagos', async () => {
         const mockPayments = [
             {

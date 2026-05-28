@@ -42,6 +42,7 @@ describe('UpdatePaymentUseCase', () => {
         payment_date: null,
     };
 
+    // Test 1: Verifica que execute lanza error cuando el payload de actualización es inválido.
     it('debe lanzar error si el payload de actualización es inválido', async () => {
         vi.mocked(
             mockPaymentValidator.validateUpdatePayload,
@@ -60,6 +61,7 @@ describe('UpdatePaymentUseCase', () => {
         expect(mockPaymentRepo.update).not.toHaveBeenCalled();
     });
 
+    // Test 2: Verifica que execute lanza error cuando el pago no existe.
     it('debe lanzar error si el pago no existe', async () => {
         vi.mocked(mockPaymentRepo.findById).mockResolvedValueOnce(null);
 
@@ -86,6 +88,7 @@ describe('UpdatePaymentUseCase', () => {
         expect(mockPaymentRepo.update).not.toHaveBeenCalled();
     });
 
+    // Test 3: Verifica que execute lanza error cuando el pago no puede actualizarse.
     it('debe lanzar error si el pago no puede actualizarse', async () => {
         const canceledPayment = {
             ...existingPayment,
@@ -117,6 +120,7 @@ describe('UpdatePaymentUseCase', () => {
         expect(mockPaymentRepo.update).not.toHaveBeenCalled();
     });
 
+    // Test 4: Verifica que execute lanza error cuando el estado solicitado es inválido.
     it('debe lanzar error si el estado solicitado es inválido', async () => {
         vi.mocked(mockPaymentRepo.findById).mockResolvedValueOnce(
             existingPayment as any,
@@ -138,6 +142,7 @@ describe('UpdatePaymentUseCase', () => {
         expect(mockPaymentRepo.update).not.toHaveBeenCalled();
     });
 
+    // Test 5: Verifica que execute marca como Pagado usando payment_date informado.
     it('debe actualizar el pago a Pagado y usar payment_date informado', async () => {
         const updatedPayment = {
             ...existingPayment,
@@ -166,6 +171,7 @@ describe('UpdatePaymentUseCase', () => {
         expect(result).toEqual(updatedPayment);
     });
 
+    // Test 6: Verifica que execute marca como Pagado usando la fecha actual si no se informa payment_date.
     it('debe actualizar el pago a Pagado y usar la fecha actual si no se informa payment_date', async () => {
         const updatedPayment = {
             ...existingPayment,
@@ -193,6 +199,7 @@ describe('UpdatePaymentUseCase', () => {
         expect(result).toEqual(updatedPayment);
     });
 
+    // Test 7: Verifica que execute ajusta estado a Vencido cuando corresponde por vencimiento.
     it('debe actualizar el pago a Vencido si está vencido y no se intenta marcar como Pagado', async () => {
         const expiredPayment = {
             ...existingPayment,
@@ -226,6 +233,7 @@ describe('UpdatePaymentUseCase', () => {
         expect(result).toEqual(updatedPayment);
     });
 
+    // Test 8: Verifica que execute fuerza payment_date en null cuando el estado no es Pagado.
     it('debe actualizar el pago con payment_date null si el estado no es Pagado', async () => {
         const updatedPayment = {
             ...existingPayment,

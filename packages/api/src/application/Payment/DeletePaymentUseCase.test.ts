@@ -23,6 +23,7 @@ describe('DeletePaymentUseCase', () => {
         vi.clearAllMocks();
     });
 
+    // Test 1: Verifica que execute lanza error cuando el pago no existe.
     it('debe lanzar error si el pago no existe', async () => {
         const error = new Error('Pago no encontrado');
 
@@ -47,6 +48,7 @@ describe('DeletePaymentUseCase', () => {
         expect(mockPaymentRepo.cancel).not.toHaveBeenCalled();
     });
 
+    // Test 2: Verifica que execute lanza error cuando el pago ya está cancelado.
     it('debe lanzar error si el pago ya está cancelado', async () => {
         const existingPayment = {
             id: 'payment-1',
@@ -83,6 +85,7 @@ describe('DeletePaymentUseCase', () => {
         expect(mockPaymentRepo.cancel).not.toHaveBeenCalled();
     });
 
+    // Test 3: Verifica que execute cancela el pago cuando existe y es cancelable.
     it('debe cancelar el pago si existe y puede ser cancelado', async () => {
         const existingPayment = {
             id: 'payment-1',

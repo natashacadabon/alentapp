@@ -40,6 +40,7 @@ describe('CreatePaymentUseCase', () => {
         due_date: '2026-05-10',
     };
 
+    // Test 1: Verifica que execute lanza error cuando el miembro no existe.
     it('debe lanzar error si el miembro no existe', async () => {
         vi.mocked(mockMemberRepository.findById).mockResolvedValueOnce(null);
 
@@ -63,6 +64,7 @@ describe('CreatePaymentUseCase', () => {
         expect(mockPaymentRepository.create).not.toHaveBeenCalled();
     });
 
+    // Test 2: Verifica que execute crea un pago pendiente con datos válidos y miembro existente.
     it('debe crear un pago pendiente si los datos son válidos y el miembro existe', async () => {
         const createdPayment = {
             id: 'payment-1',
@@ -108,6 +110,7 @@ describe('CreatePaymentUseCase', () => {
         expect(result).toEqual(createdPayment);
     });
 
+    // Test 3: Verifica que execute propaga errores de validación de campos.
     it('debe propagar el error si falla una validación', async () => {
         vi.mocked(mockPaymentValidator.validateAmount).mockImplementationOnce(
             () => {
@@ -123,6 +126,7 @@ describe('CreatePaymentUseCase', () => {
         expect(mockPaymentRepository.create).not.toHaveBeenCalled();
     });
 
+    // Test 4: Verifica que execute propaga error cuando ya existe pago para miembro, mes y año.
     it('debe propagar el error si ya existe un pago para el mismo miembro, mes y año', async () => {
         vi.mocked(
             mockPaymentValidator.validateUniquePayment,
