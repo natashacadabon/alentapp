@@ -13,7 +13,7 @@ describe('DeleteMedicalCertificateUseCase', () => {
 
         repository = {
         // Simula el método que busca un certificado por id
-        findById: vi.fn(),
+        findActiveByMemberId: vi.fn(),
         // Simula el método que elimina un certificado
         delete: vi.fn(),
         } as unknown as MedicalCertificateRepository;
@@ -28,7 +28,7 @@ describe('DeleteMedicalCertificateUseCase', () => {
         const certificateId = 'certificate-123';
 
         // Simulamos que encuentra un certificado con ese id
-        vi.mocked(repository.findById).mockResolvedValue({
+        vi.mocked(repository.findActiveByMemberId).mockResolvedValue({
         id: certificateId,
         issue_date: new Date('2026-01-01'),
         expiry_date: new Date('2026-12-31'),
@@ -49,7 +49,7 @@ describe('DeleteMedicalCertificateUseCase', () => {
 
         const certificateId = 'certificate-456';
 
-        vi.mocked(repository.findById).mockResolvedValue({
+        vi.mocked(repository.findActiveByMemberId).mockResolvedValue({
         id: certificateId,
         issue_date: new Date('2026-01-01'),
         expiry_date: new Date('2026-12-31'),
@@ -70,11 +70,11 @@ describe('DeleteMedicalCertificateUseCase', () => {
 
         const certificateId = 'certificate-inexistente';
 
-        vi.mocked(repository.findById).mockResolvedValue(null);
+        vi.mocked(repository.findActiveByMemberId).mockResolvedValue(null);
 
         // Esperamos que al ejecutar el caso de uso se lance un error
         await expect(useCase.execute(certificateId)).rejects.toThrow(
-        'Medical certificate not found'
+        'El certificado indicado no se encuentra'
         );
 
         // Verificamos que delete no haya sido llamado
