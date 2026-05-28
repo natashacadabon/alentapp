@@ -23,7 +23,7 @@ export class PostgresMemberRepository implements MemberRepository {
         }
 
         this.prisma ??= new PrismaClient({
-            adapter: new PrismaPg(process.env.DATABASE_URL),
+            adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
         });
 
         return this.prisma;
