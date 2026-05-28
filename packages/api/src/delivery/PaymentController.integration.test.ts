@@ -75,6 +75,7 @@ describe('Payment API Integration Tests', () => {
     describe('POST /api/v1/payments', () => {
         // Test 1: Verifica alta exitosa y valores por defecto del pago creado.
         it('debe crear un pago correctamente con estado Pendiente y payment_date null', async () => {
+            //  payload válido para un socio existente.
             const payload: CreatePaymentRequest = {
                 member_id: 'member-1',
                 amount: 15000,
@@ -83,16 +84,20 @@ describe('Payment API Integration Tests', () => {
                 due_date: '2026-06-01',
             };
 
+            // invoca el endpoint real con inyección HTTP de Fastify.
             const response = await app.inject({
                 method: 'POST',
                 url: '/api/v1/payments',
                 payload,
             });
 
+            // creación exitosa.
             expect(response.statusCode).toBe(201);
 
+            // Parseo del body para validar la estructura de respuesta.
             const body = JSON.parse(response.payload);
 
+            // valida datos persistidos y valores por defecto de dominio.
             expect(body.data).toEqual({
                 id: 'payment-1',
                 member_id: 'member-1',
@@ -103,6 +108,32 @@ describe('Payment API Integration Tests', () => {
                 payment_date: null,
                 status: 'Pendiente',
             });
+        });
+
+        // Test 2: Verifica que no se cree el pago si el socio asociado no existe.
+        it('debe retornar 404 si el miembro no existe', async () => {
+            // payload con member_id inexistente.
+            const payload: CreatePaymentRequest = {
+                member_id: 'member-inexistente',
+                amount: 15000,
+                month: 5,
+                year: 2026,
+                due_date: '2026-06-01',
+            };
+
+            // invoca el endpoint de creación.
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/v1/payments',
+                payload,
+            });
+
+            // error esperado por recurso relacionado inexistente.
+            expect(response.statusCode).toBe(404);
+
+            // mensaje de error de negocio esperado.
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('El miembro especificado no existe');
         });
     });
 });
