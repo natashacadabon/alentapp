@@ -128,8 +128,7 @@ describe('UpdateMedicalCertificateUseCase', () => {
             is_validated: false,
         };
 
-        // Datos inválidos:
-        // la matrícula está vacía
+        // Datos inválidos: la matrícula está vacía
         const invalidUpdateRequest: UpdateMedicalCertificateRequest = {
             issue_date: new Date('2026-05-10'),
             expiry_date: new Date('2026-12-10'),
@@ -145,7 +144,7 @@ describe('UpdateMedicalCertificateUseCase', () => {
             throw new Error('La matrícula del médico es obligatoria');
         });
 
-        // Esperamos que el use case lance el error del validador validateDoctorLicense
+        // Esperamos que el use case lance el error del validateDoctorLicense
         await expect(
         useCase.execute(certificateId, invalidUpdateRequest),
         ).rejects.toThrow('La matrícula del médico es obligatoria');
@@ -155,7 +154,7 @@ describe('UpdateMedicalCertificateUseCase', () => {
         certificateId,
         );
 
-        // Verificamos que NO se actualice porque falló la validación
+        // Verificamos que no se actualice porque falló la validación
         expect(repository.update).not.toHaveBeenCalled();
     });
 
