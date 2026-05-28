@@ -44,6 +44,24 @@ describe('DeleteMedicalCertificateUseCase', () => {
         expect(repository.delete).toHaveBeenCalledTimes(1);
     });
 
+    // Segundo test: Verifica que delete reciba exactamente el id correcto
+    it('debería llamar al delete del repositorio con el id correcto', async () => {
 
+        const certificateId = 'certificate-456';
+
+        vi.mocked(repository.findById).mockResolvedValue({
+        id: certificateId,
+        issue_date: new Date('2026-01-01'),
+        expiry_date: new Date('2026-12-31'),
+        doctor_license: 'MP67890',
+        is_validated: false,
+        member_id: 'member-456',
+        });
+
+        await useCase.execute(certificateId);
+
+        // Verificamos que delete haya sido llamado con el mismo id
+        expect(repository.delete).toHaveBeenCalledWith(certificateId);
+    });
 
 });
