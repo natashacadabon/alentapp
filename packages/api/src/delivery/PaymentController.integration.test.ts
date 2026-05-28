@@ -75,6 +75,25 @@ vi.mock('../infrastructure/PostgresPaymentRepository.js', () => {
                     status: 'Pendiente',
                 };
             }
+
+            async findAll() {
+                return [
+                    {
+                        id: 'payment-1',
+                        member_id: 'member-1',
+                        amount: 15000,
+                        month: 5,
+                        year: 2026,
+                        due_date: '2026-06-01',
+                        payment_date: null,
+                        status: 'Pendiente',
+                        member: {
+                            name: 'Juan Perez',
+                            dni: '12345678',
+                        },
+                    },
+                ];
+            }
         },
     };
 });
@@ -179,6 +198,37 @@ describe('Payment API Integration Tests', () => {
             const body = JSON.parse(response.payload);
             expect(body.error).toBe(
                 'Ya existe un pago para este miembro en el mes y año especificados',
+            );
+        });
+    });
+
+    describe('GET /api/v1/payments', () => {
+        // Test 4: Verifica listado exitoso de pagos existentes.
+        it('debe retornar 200 y el listado de pagos', async () => {
+            // invoca el endpoint de listado de pagos.
+            const response = await app.inject({
+                method: 'GET',
+                url: '/api/v1/payments',
+            });
+            // respuesta exitosa.
+            expect(response.statusCode).toBe(200);
+            // parseo del body para validar estructura de respuesta.
+            const body = JSON.parse(response.payload);
+            expect(body.data).toBeInstanceOf(Array);
+            expect(body.data[0]).toEqual(
+                expect.objectContaining({
+                    id: 'payment-1',
+                    member_id: 'member-1',
+                    amount: 15000,
+                    month: 5,
+                    year: 2026,
+                    payment_date: null,
+                    status: 'Pendiente',
+                    member: {
+                        name: 'Juan Perez',
+                        dni: '12345678',
+                    },
+                }),
             );
         });
     });
