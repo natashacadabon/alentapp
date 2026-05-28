@@ -73,28 +73,85 @@ describe('UpdateMedicalCertificateUseCase', () => {
         expect(result).toEqual(updatedCertificate);
     });
 
-    // Segundo test: Verifica que se lance un error si el certificado no existe
-    it('debería lanzar error si el certificado médico no existe', async () => {
-        // Definimos un id de un certificado inexistente
-        const id = 'certificate-inexistente';
-
-        // Creamos una solicitud de actualización válida
-        const updateRequest: UpdateMedicalCertificateRequest = {
-            issue_date: new Date('2026-05-10'),
-            expiry_date: new Date('2026-12-10'),
-            doctor_license: 'XYZ789',
+    // Segundo test: Verificar si la fecha de vencimiento es anterior a la fecha de emisión
+    it('debería lanzar error si la fecha de vencimiento no es posterior a la fecha de emisión', async () => {
+        
+        const certificateId = 'certificate-1';
+    
+        const existingCertificate = {
+        id: certificateId,
+        issue_date: new Date('2026-05-01'),
+        expiry_date: new Date('2026-12-01'),
+        doctor_license: 'ABC123',
+        member_id: 'member-1',
+        is_validated: false,
         };
 
-        // Simulamos que el repositorio no encuentra ningún certificado con ese id
-        vi.mocked(repository.findById).mockResolvedValue(null);
+        // Datos inválidos: la fecha de vencimiento es anterior a la fecha de emisión
+        const invalidUpdateRequest: UpdateMedicalCertificateRequest = {
+        issue_date: new Date('2026-12-10'),
+        expiry_date: new Date('2026-05-10'),
+        doctor_license: 'ABC123',
+        };
 
-        await expect(useCase.execute(id, updateRequest)).rejects.toThrow(
-        'El certificado indicado no se encuentra',
+        // Simulamos que el certificado existe
+        vi.mocked(repository.findById).mockResolvedValue(
+        existingCertificate,
         );
 
-        expect(repository.findById).toHaveBeenCalledWith(id);
+        
+        await expect(useCase.execute(certificateId, invalidUpdateRequest),).rejects.toThrow(
+        'La fecha de vencimiento debe ser posterior a la de emisión',
+        );
 
-        // Verificamos que no se haya llamado a update
+        // Verificamos que se haya buscado el certificado
+        expect(repository.findById).toHaveBeenCalledWith(
+        certificateId,
+        );
+
+        // Verificamos que no se actualice porque falló la validación
+        expect(repository.update).not.toHaveBeenCalled();
+    });
+
+
+    // Tercer test: Verifica que si la matrícula del médico está vacía
+        it('debería lanzar error si la matrícula del médico está vacía', async () => {
+        const certificateId = 'certificate-1';
+
+        // Certificado existente simulado
+        const existingCertificate = {
+            id: certificateId,
+            issue_date: new Date('2026-05-01'),
+            expiry_date: new Date('2026-12-01'),
+            doctor_license: 'ABC123',
+            member_id: 'member-1',
+            is_validated: false,
+        };
+
+        // Datos inválidos:
+        // la matrícula está vacía
+        const invalidUpdateRequest: UpdateMedicalCertificateRequest = {
+            issue_date: new Date('2026-05-10'),
+            expiry_date: new Date('2026-12-10'),
+            doctor_license: '',
+        };
+
+        // Simulamos que el certificado existe
+        vi.mocked(repository.findById).mockResolvedValue(
+        existingCertificate,
+        );
+
+        // Esperamos que el use case lance el error del validador validateDoctorLicense
+        await expect(
+        useCase.execute(certificateId, invalidUpdateRequest),
+        ).rejects.toThrow('La matrícula del médico es obligatoria');
+
+        // Verificamos que se haya buscado el certificado
+        expect(repository.findById).toHaveBeenCalledWith(
+        certificateId,
+        );
+
+        // Verificamos que NO se actualice porque falló la validación
         expect(repository.update).not.toHaveBeenCalled();
     });
 
