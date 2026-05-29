@@ -49,7 +49,7 @@ describe('LockersView - Integration Tests (TDD_0002)', () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     // Configurar mocks por defecto
     vi.mocked(lockersService.getAll).mockResolvedValue([]);
     vi.mocked(membersService.getAll).mockResolvedValue([memberMock]);
@@ -110,80 +110,74 @@ describe('LockersView - Integration Tests (TDD_0002)', () => {
   });
 
   /**
-   * Test 3: Verificar que el componente renderiza correctamente con spinner de carga
-   * Valida que el estado de carga se muestre mientras se traen los datos
+   * Test 3: Crear un locker exitosamente
+   * Valida que al llenar el formulario y enviar, el nuevo locker se crea
    */
-  it('debe mostrar el spinner de carga mientras se cargan los lockers', async () => {
-    vi.mocked(lockersService.getAll).mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(() => resolve([baseLocker]), 100);
-        })
-    );
+  it('debe crear un locker exitosamente y mostrarlo en la tabla', async () => {
+    const user = userEvent.setup();
+    const newLocker: LockerDTO = {
+      id: 'locker-new',
+      number: 3,
+      location: 'Vestuario C',
+      status: 'Disponible',
+      member_id: null,
+    };
+
+    // Primero devuelve lista vacía, luego después de crear devuelve la lista con el nuevo locker
+    vi.mocked(lockersService.getAll).mockResolvedValueOnce([]);
+    vi.mocked(lockersService.create).mockResolvedValueOnce(newLocker);
+    vi.mocked(lockersService.getAll).mockResolvedValueOnce([newLocker]);
 
     renderWithProviders(<LockersView />);
 
-    // Verificamos que el spinner aparece
-    expect(screen.getByText('Cargando lockers...')).toBeInTheDocument();
-
-    // Esperamos a que desaparezca
+    // Esperamos a que termine de cargar
     await waitFor(() => {
       expect(screen.queryByText('Cargando lockers...')).not.toBeInTheDocument();
     });
 
-    // Verificamos que el locker aparece
-    expect(screen.getByText('Vestuario A')).toBeInTheDocument();
-  });
-
-  /**
-   * Test 4: Verificar que existe el botón de agregar locker
-   * Valida que la interfaz tenga el botón para crear nuevos lockers
-   */
-  it('debe mostrar el botón para agregar nuevo locker', async () => {
-    vi.mocked(lockersService.getAll).mockResolvedValueOnce([baseLocker]);
-
-    renderWithProviders(<LockersView />);
-
-    // Esperamos a que cargue
-    await waitFor(() => {
-      expect(screen.getByText('Vestuario A')).toBeInTheDocument();
-    });
-
-    // Verificamos que existe el botón "Agregar Locker"
+    // Hacemos click en "Agregar Locker"
     const addButton = screen.getByRole('button', { name: /Agregar Locker/i });
-    expect(addButton).toBeInTheDocument();
-  });
+    await user.click(addButton);
 
-  /**
-   * Test 5: Validar que el formulario de creación funciona correctamente
-   * Verifica que se valide la entrada de datos antes de crear
-   */
-  it('debe mostrar los botones de acción (editar y eliminar) en la tabla', async () => {
-    const user = userEvent.setup();
-
-    vi.mocked(lockersService.getAll).mockResolvedValueOnce([baseLocker]);
-
-    renderWithProviders(<LockersView />);
-
-    // Esperamos a que cargue el locker
+    // Verificamos que el modal se abre
     await waitFor(() => {
-      expect(screen.getByText('Vestuario A')).toBeInTheDocument();
+      expect(screen.getByText(/Agregar Nuevo Locker/i)).toBeVisible();
     });
 
-    // Verificamos que los botones de acción existan
-    const editButtons = screen.getAllByRole('button', { name: /Editar locker/i });
-    const deleteButtons = screen.getAllByRole('button', { name: /Eliminar locker/i });
+    // Llenamos el formulario
+    const numberInput = screen.getByPlaceholderText(/Ej\. 12/i);
+    const locationInput = screen.getByPlaceholderText(/Ej\. Vestuario A/i);
 
-    expect(editButtons).toHaveLength(1);
-    expect(deleteButtons).toHaveLength(1);
+    await user.clear(numberInput);
+    await user.type(numberInput, '3');
+    await user.type(locationInput, 'Vestuario C');
+
+    // Guardamos
+    const saveButton = screen.getByRole('button', { name: /Crear Locker/i });
+    await user.click(saveButton);
+
+    // Esperamos a que el modal se cierre y el locker aparezca en la tabla
+    await waitFor(() => {
+      expect(screen.queryByText(/Agregar Nuevo Locker/i)).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Vestuario C')).toBeInTheDocument();
   });
 
   /**
-   * Test 6: Verificar estructura de la tabla
-   * Valida que la tabla tenga las columnas correctas
+   * Test 4: Actualizar ubicación de un locker
+   * Valida que se pueda cambiar la ubicación de un locker existente
    */
-  it('debe mostrar las columnas correctas en la tabla', async () => {
+  it('debe actualizar la ubicación de un locker exitosamente', async () => {
+    const user = userEvent.setup();
+    const updatedLocker: LockerDTO = {
+      ...baseLocker,
+      location: 'Vestuario A - Fila 1',
+    };
+
     vi.mocked(lockersService.getAll).mockResolvedValueOnce([baseLocker]);
+    vi.mocked(lockersService.update).mockResolvedValueOnce(updatedLocker);
+    vi.mocked(lockersService.getAll).mockResolvedValueOnce([updatedLocker]);
 
     renderWithProviders(<LockersView />);
 
@@ -192,11 +186,103 @@ describe('LockersView - Integration Tests (TDD_0002)', () => {
       expect(screen.getByText('Vestuario A')).toBeInTheDocument();
     });
 
-    // Verificamos que existan los headers de la tabla
-    expect(screen.getByText('N° Locker')).toBeInTheDocument();
-    expect(screen.getByText('Ubicación')).toBeInTheDocument();
-    expect(screen.getByText('Estado')).toBeInTheDocument();
-    expect(screen.getByText('Socio asignado')).toBeInTheDocument();
-    expect(screen.getByText('Acciones')).toBeInTheDocument();
+    // Hacemos click en editar
+    const editButtons = screen.getAllByRole('button', { name: /Editar/i });
+    await user.click(editButtons[0]);
+
+    // Verificamos que el modal de edición se abre
+    await waitFor(() => {
+      expect(screen.getByText(/Editar Locker/i)).toBeVisible();
+    });
+
+    // Modificamos la ubicación
+    const locationInput = screen.getByDisplayValue('Vestuario A');
+    await user.clear(locationInput);
+    await user.type(locationInput, 'Vestuario A - Fila 1');
+
+    // Guardamos cambios
+    const saveButton = screen.getByRole('button', { name: /Guardar Cambios/i });
+    await user.click(saveButton);
+
+    // Verificamos que se actualice la tabla
+    await waitFor(() => {
+      expect(screen.getByText('Vestuario A - Fila 1')).toBeInTheDocument();
+      expect(screen.queryByDisplayValue('Vestuario A')).not.toBeInTheDocument();
+    });
+  });
+
+  /**
+   * Test 5: Asignar un locker a un miembro
+   * Valida que se pueda asignar un locker disponible a un miembro existente
+   */
+  it('debe asignar un locker a un miembro exitosamente', async () => {
+    const user = userEvent.setup();
+    const assignedLocker: LockerDTO = {
+      ...baseLocker,
+      status: 'Ocupado',
+      member_id: 'member-1',
+    };
+
+    vi.mocked(lockersService.getAll).mockResolvedValueOnce([baseLocker]);
+    vi.mocked(membersService.getAll).mockResolvedValue([memberMock]);
+    vi.mocked(lockersService.update).mockResolvedValueOnce(assignedLocker);
+    vi.mocked(lockersService.getAll).mockResolvedValueOnce([assignedLocker]);
+
+    renderWithProviders(<LockersView />);
+
+    // Esperamos a que cargue
+    await waitFor(() => {
+      expect(screen.getByText('Disponible')).toBeInTheDocument();
+    });
+
+    // Hacemos click en editar
+    const editButtons = screen.getAllByRole('button', { name: /Editar/i });
+    await user.click(editButtons[0]);
+
+    // Abrimos el modal de edición
+    await waitFor(() => {
+      expect(screen.getByText(/Editar Locker/i)).toBeVisible();
+    });
+
+    // Buscamos el miembro en el campo de búsqueda
+    const memberSearchInput = screen.getByPlaceholderText(/Buscar por nombre o DNI/i);
+    await user.type(memberSearchInput, 'Juan');
+
+    // Esperamos que aparezcan los resultados y seleccionamos al miembro
+    await waitFor(() => {
+      expect(screen.getByText(/Juan Pérez/i)).toBeInTheDocument();
+    });
+
+    const memberOption = screen.getByText(/Juan Pérez/i);
+    await user.click(memberOption);
+
+    // Guardamos cambios
+    const saveButton = screen.getByRole('button', { name: /Guardar Cambios/i });
+    await user.click(saveButton);
+
+    // Verificamos que el estado cambió a "Ocupado"
+    await waitFor(() => {
+      expect(screen.getByText('Ocupado')).toBeInTheDocument();
+    });
+  });
+
+  /**
+   * Test 6: Manejo de errores cuando el servicio falla
+   * Valida que se muestre un mensaje de error si la API no responde correctamente
+   */
+  it('debe renderizar un mensaje de error si el servicio backend falla', async () => {
+    // Simulamos un error 500
+    vi.mocked(lockersService.getAll).mockRejectedValueOnce(
+      new Error('Error al conectar con el servidor')
+    );
+
+    renderWithProviders(<LockersView />);
+
+    // Esperamos a que se muestre el texto de error en pantalla
+    await waitFor(() => {
+      expect(
+        screen.getByText('Error al conectar con el servidor')
+      ).toBeInTheDocument();
+    });
   });
 });
