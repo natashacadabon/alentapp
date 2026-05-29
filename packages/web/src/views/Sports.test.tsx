@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SportsView } from './Sports';
 import { sportsService } from '../services/sports';
@@ -187,6 +187,103 @@ describe('SportsView - Create', () => {
 
     alertSpy.mockRestore();
   });
+});
 
-  
+describe('SportsView - Update', () => {
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(<Provider>{ui}</Provider>);
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  //unit 14
+  it('debe permitir editar un deporte existente', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+
+    const mockSports = [
+      { id: '1', name: 'Fútbol', description: 'Desc vieja', max_capacity: 22, additional_price: 500, requires_medical_certificate: true }
+    ] as SportDTO[];
+
+    vi.mocked(sportsService.getAll).mockResolvedValue(mockSports);
+    vi.mocked(sportsService.update).mockResolvedValueOnce({
+      ...mockSports[0],
+      description: 'Desc nueva',
+      max_capacity: 30,
+    });
+
+    renderWithProviders(<SportsView />);
+
+    //espera a que apareza en la pantalla
+    await waitFor(() => {
+      expect(screen.getByText('Fútbol')).toBeInTheDocument();
+    });
+
+    // Clic en editar
+    const editButton = screen.getByLabelText(/Editar deporte/i);
+    await user.click(editButton);
+
+    // Verificamos que el modal se abre con los datos del deporte
+    expect(screen.getByText('Editar Deporte')).toBeInTheDocument();
+
+    // Modificamos la capacidad
+    const capacidadInput = screen.getByDisplayValue(22);
+    fireEvent.change(capacidadInput, { target: { value: '30' } });
+    
+    const descInput = screen.getByDisplayValue('Desc vieja');
+    await user.clear(descInput);
+    await user.type(descInput, 'Desc nueva');
+
+    // Guardamos
+    const submitButton = screen.getByText('Guardar Cambios');
+    await user.click(submitButton);
+
+    expect(sportsService.update).toHaveBeenCalledWith('1', expect.objectContaining({
+      max_capacity: 30, description: 'Desc nueva'
+    }));
+  });
+});
+
+describe('SportsView - Delete', () => {
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(<Provider>{ui}</Provider>);
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  //unit 15
+  it('debe permitir eliminar un deporte con confirmación', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+
+    const mockSports = [
+      { id: '1', name: 'Fútbol', description: 'Fútbol 11', max_capacity: 22, additional_price: 500, requires_medical_certificate: true }
+    ] as SportDTO[];
+
+    vi.mocked(sportsService.getAll).mockResolvedValue(mockSports);
+    vi.mocked(sportsService.delete).mockResolvedValueOnce(undefined);
+
+    // Interceptamos el ConfirmActionDialog — necesitamos simular el clic en confirmar
+    renderWithProviders(<SportsView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Fútbol')).toBeInTheDocument();
+    });
+
+    // Clic en eliminar
+    const deleteButton = screen.getByLabelText(/Eliminar deporte/i);
+    await user.click(deleteButton);
+
+    // Verificamos que el modal de confirmación aparece
+    expect(screen.getByText('Eliminar Deporte')).toBeInTheDocument();
+
+    // Confirmamos la eliminación
+    const confirmButton = screen.getByText('Eliminar');
+    await user.click(confirmButton);
+
+    //Comprobamos que el servicio de eliminación fue llamado exactamente con el ID 1
+    expect(sportsService.delete).toHaveBeenCalledWith('1');
+  });
 });

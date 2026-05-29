@@ -3,6 +3,10 @@ import type { LockerRepository } from '../../domain/LockerRepository.js';
 import type { LockerDTO } from '@alentapp/shared';
 import { DeleteLockerUseCase } from './DeleteLockerUseCase.js';
 
+/**
+ * Tests Unitarios para DeleteLockerUseCase (TDD_0003)
+ * Cubre los casos de uso para eliminar un Locker existente
+ */
 describe('DeleteLockerUseCase', () => {
     const mockLockerRepo = {
         findById: vi.fn(),
@@ -25,6 +29,9 @@ describe('DeleteLockerUseCase', () => {
         vi.mocked(mockLockerRepo.delete).mockResolvedValue(undefined);
     });
 
+    /**
+     *Rechazar eliminación si el locker no existe
+     */
     it('debe lanzar error si el locker no existe', async () => {
         vi.mocked(mockLockerRepo.findById).mockResolvedValueOnce(null);
 
@@ -33,6 +40,9 @@ describe('DeleteLockerUseCase', () => {
         );
     });
 
+    /**
+     *Rechazar eliminación si el locker está ocupado
+     */
     it('debe lanzar error si el locker esta ocupado', async () => {
         vi.mocked(mockLockerRepo.findById).mockResolvedValueOnce({
             ...baseLocker,
@@ -45,9 +55,25 @@ describe('DeleteLockerUseCase', () => {
         );
     });
 
+    /**
+     *Eliminar locker exitosamente si no está ocupado
+     */
     it('debe aplicar borrado logico si no esta ocupado', async () => {
         await useCase.execute('locker-1');
 
         expect(mockLockerRepo.delete).toHaveBeenCalledWith('locker-1');
+    });
+
+    /**
+     *Rechazar eliminación si falla la conexión a BD
+     */
+    it('debe lanzar error si falla la conexión a la base de datos', async () => {
+        vi.mocked(mockLockerRepo.delete).mockRejectedValueOnce(
+            new Error('Error de conexión a BD'),
+        );
+
+        await expect(useCase.execute('locker-1')).rejects.toThrow(
+            'Error de conexión a BD',
+        );
     });
 });
