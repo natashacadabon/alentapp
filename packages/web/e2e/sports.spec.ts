@@ -60,6 +60,39 @@ test.describe('Sports E2E (UI Integration)', () => {
       }
     });
 
+    // interceptor para el PATCH
+    await page.route(/\/api\/v1\/sport\/(?<id>\d+)/, async (route) => {
+      const method = route.request().method();
+      
+      if (method === 'PATCH') {
+        // Playwright nos permite extraer los parámetros de la URL
+        const url = route.request().url();
+        const matches = url.match(/\/api\/v1\/sport\/(?<id>\w+)/);
+        const id = matches?.groups?.id;
+
+        const payload = route.request().postDataJSON();
+        const index = mockDb.findIndex(s => String(s.id) === String(id));
+
+        if (index > -1) {
+          // Actualizamos nuestra base de datos en memoria para que el próximo GET
+          mockDb[index] = { ...mockDb[index], ...payload };
+          
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ data: mockDb[index] })
+          });
+        } else {
+          await route.fulfill({ 
+            status: 404, 
+            contentType: 'application/json',
+            body: JSON.stringify({ error: 'Not found' }) 
+          });
+        }
+      } else {
+        await route.continue();
+      }
+    });
 
     // Va a la vista de deportes después de configurar todos las rutas
     await page.goto('/sports');
@@ -69,6 +102,27 @@ test.describe('Sports E2E (UI Integration)', () => {
     // Verificamos que nuestro dato simulado esté pintado en la tabla HTML real
     await expect(page.getByText('Fútbol')).toBeVisible();
     await expect(page.getByText('22')).toBeVisible();
+  });
+
+  test('debe abrir el modal de edición, actualizar datos y mostrar el cambio', async ({ page }) => {
+    // Aseguramos que el deporte existe en la tabla antes de editar
+    await expect(page.getByText('Fútbol')).toBeVisible();
+
+    // Abrimos el modal de edición
+    await page.getByRole('button', { name: /Editar deporte/i }).click();
+    await expect(page.getByText('Editar Deporte')).toBeVisible();
+
+    // Modificamos la capacidad máxima
+    await page.getByLabel(/Capacidad Máxima/i).fill('30');
+
+    // Guardamos los cambios
+    await page.getByRole('button', { name: 'Guardar Cambios' }).click();
+
+    // Validamos que el modal desapareció de la pantalla
+    await expect(page.getByRole('button', { name: 'Guardar Cambios' })).toBeHidden();
+
+    // Verificamos que la UI refleja el cambio
+    await expect(page.getByText('30')).toBeVisible();
   });
 
 });
