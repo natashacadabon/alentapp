@@ -2,8 +2,6 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../app.js';
 import { UpdateSportRequest } from '@alentapp/shared';
-import { PostgresLockerRepository } from '../infrastructure/PostgresLockerRepository.js';
-import { PostgresMedicalCertificateRepository } from '../infrastructure/PostgresMedicalCertificateRepository.js';
 
 // Testeo la integración entre: Fastify -> Controller -> UseCase -> Validator
 
@@ -73,6 +71,74 @@ describe('Sport API Integration Tests - Update', () => {
     afterAll(async () => {
         await app.close();
     });
+
+    describe('POST /api/v1/sport', () => {
+
+        //integration 5
+        it('debe retornar 201 y crear el deporte exitosamente', async () => {
+            const payload = {
+                name: 'Nuevo Deporte',
+                description: 'Descripción',
+                max_capacity: 15,
+                additional_price: 300,
+                requires_medical_certificate: false,
+            };
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/v1/sport',
+                payload
+            });
+
+            expect(response.statusCode).toBe(201);
+            const body = JSON.parse(response.payload);
+            expect(body.data.name).toBe('Nuevo Deporte');
+            expect(body.data.id).toBeDefined();
+        });
+
+        //integration 6
+        it('debe retornar 409 si el nombre ya existe', async () => {
+            const payload = {
+                name: 'Fútbol Existente',
+                description: '',
+                max_capacity: 22,
+                additional_price: 500,
+                requires_medical_certificate: false,
+            };
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/v1/sport',
+                payload
+            });
+
+            expect(response.statusCode).toBe(409);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('Ya existe un deporte con ese nombre');
+        });
+
+        //integration 7
+        it('debe retornar 400 si la capacidad máxima es invalida (menor o igual a cero)', async () => {
+            const payload = {
+                name: 'Deporte Inválido',
+                description: '',
+                max_capacity: 0,
+                additional_price: 500,
+                requires_medical_certificate: false,
+            };
+
+            const response = await app.inject({
+                method: 'POST',
+                url: '/api/v1/sport',
+                payload
+            });
+
+            expect(response.statusCode).toBe(400);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('La capacidad máxima debe ser mayor a cero');
+        });
+    });
+
 
     describe('PATCH /api/v1/sport/:id', () => {
 
