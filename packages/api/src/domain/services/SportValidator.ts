@@ -5,7 +5,7 @@ export class SportValidator {
 
     validateMaxCapacity(max_capacity: number): void {
         if (max_capacity <= 0){
-            throw new Error('La capacidad maxima debe ser mayor a cero');
+            throw new Error('La capacidad máxima debe ser mayor a cero');
         }
     }
 
