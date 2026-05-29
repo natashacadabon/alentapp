@@ -112,6 +112,25 @@ describe('Sport API Integration Tests - Update', () => {
             const body = JSON.parse(response.payload);
             expect(body.error).toBe('El deporte indicado no se encuentra registrado');
         });
+
+        //integration 8
+        it('debe retornar 400 si se quiere modificar el nombre', async () => {
+            // Enviamos un payload que incluye 'name', que tiene que ser inmutable una vez creado
+            const payload = {
+                name: "Nuevo Nombre",
+                max_capacity: 30,
+            };
+
+            const response = await app.inject({
+                method: 'PATCH',
+                url: '/api/v1/sport/999',
+                payload
+            });
+
+            expect(response.statusCode).toBe(400);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('Solo se permite modificar description y max_capacity');
+        });
         
     });
 });
