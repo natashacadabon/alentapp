@@ -62,7 +62,7 @@ vi.mock('../infrastructure/PostgresMedicalCertificateRepository.js', () => ({
     }
 }));
 
-describe('Sport API Integration Tests - Update', () => {
+describe('Sport API Integration Tests', () => {
     let app: FastifyInstance;
 
     beforeAll(async () => {
@@ -113,5 +113,31 @@ describe('Sport API Integration Tests - Update', () => {
             expect(body.error).toBe('El deporte indicado no se encuentra registrado');
         });
         
+    });
+
+    describe('DELETE /api/v1/sport/:id', () => {
+
+        //integration 3
+        it('debe retornar 204 si se elimina correctamente', async () => {
+            const response = await app.inject({
+                method: 'DELETE',
+                url: '/api/v1/sport/1'
+            });
+
+            expect(response.statusCode).toBe(204);
+            expect(response.payload).toBe('');
+        });
+
+        //integration 4
+        it('debe retornar 404 si el deporte a eliminar no existe', async () => {
+            const response = await app.inject({
+                method: 'DELETE',
+                url: '/api/v1/sport/999'
+            });
+
+            expect(response.statusCode).toBe(404);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('El deporte indicado no se encuentra registrado');
+        });
     });
 });

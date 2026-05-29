@@ -77,6 +77,7 @@ export class SportController {
             await this.deleteSportUseCase.execute(id);
             return reply.status(204).send();
         } catch (error: any) {
+            console.log('ERROR DELETE:', error.message);
             if (error.message.includes('no se encuentra registrado')) {
                 return reply.status(404).send({ error: error.message });
             }
