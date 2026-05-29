@@ -2,13 +2,23 @@ import { test, expect } from '@playwright/test';
 
 const API_URL = 'http://localhost:3001/api/v1';
 
+/**
+ * Tests E2E Full-Stack para la vista de Pagos.
+ * NO hay ningun mock de red. Playwright interactua con:
+ *   - El Frontend React en http://localhost:5174
+ *   - La API Fastify real en http://localhost:3001
+ *   - La base de datos PostgreSQL de test (alentapp_test_db)
+ *
+ * El global-setup se encarga de limpiar la DB antes de correr la suite,
+ * por lo que cada test empieza desde un estado conocido y limpio.
+ */
+
 test.describe('Payments Full-Stack E2E', () => {
-    // Test 1: Verifica el flujo completo de alta de pago desde la UI.
-    test('debe crear un pago desde la pantalla de pagos', async ({
+    test('debe crear un pago real y mostrarlo en la tabla', async ({
         page,
         request,
     }) => {
-        // crea un socio por API para usarlo como precondición del pago.
+        // creamos un socio real vía API para usarlo en la UI.
         const memberResponse = await request.post(`${API_URL}/socios`, {
             data: {
                 name: 'Socio Pago E2E',
@@ -19,33 +29,32 @@ test.describe('Payments Full-Stack E2E', () => {
             },
         });
 
-        // Valida que la precondición se cumpla.
         expect(memberResponse.status()).toBe(201);
 
-        // Navega a la pantalla de pagos.
+        // Navegamos a la vista de pagos y abrimos el modal de alta.
         await page.goto('/payments');
 
-        // Abre el formulario de alta.
-        await page.getByRole('button', { name: /Agregar Pago/i }).click();
+        await page.locator('button:has-text("Agregar Pago")').click();
         await expect(page.getByText('Agregar Nuevo Pago')).toBeVisible();
 
-        // Busca y selecciona el socio creado.
+        // Seleccionamos el socio creado previamente.
         await page
             .getByPlaceholder('Buscar por nombre o DNI')
             .fill('Socio Pago E2E');
         await page.getByText('Socio Pago E2E').click();
 
-        // Completa los campos del formulario.
+        // Completamos los datos del pago.
         await page.getByLabel('Mes').fill('5');
-        await page.getByLabel('Año').fill('2026');
+        await page.getByLabel(/A.o/).fill('2026');
         await page.getByLabel('Monto').fill('15000');
         await page.getByLabel('Fecha de Vencimiento').fill('2026-06-01');
 
-        // Envía la creación del pago.
         await page.getByRole('button', { name: 'Crear Pago' }).click();
 
-        // confirma cierre del modal y render del pago en la tabla.
-        await expect(page.getByRole('button', { name: 'Crear Pago' })).toBeHidden();
+        // Verificamos cierre del modal y presencia del nuevo registro en tabla.
+        await expect(
+            page.getByRole('button', { name: 'Crear Pago' }),
+        ).toBeHidden();
         await expect(page.getByText('Socio Pago E2E')).toBeVisible({
             timeout: 10000,
         });
