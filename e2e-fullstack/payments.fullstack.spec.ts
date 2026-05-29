@@ -76,6 +76,41 @@ test.describe('Payments Full-Stack E2E', () => {
         ).toBeVisible();
         await expect(page.getByText('Pendiente')).toBeVisible();
     });
+    
+    test('debe editar el pago creado y ver el cambio en la tabla', async ({
+        page,
+    }) => {
+        await page.goto('/payments');
+
+        // Esperar que el pago del test anterior este en la tabla
+        await expect(page.getByText('Socio Pago E2E')).toBeVisible({
+            timeout: 10000,
+        });
+
+        // Clic en Editar
+        await page
+            .getByRole('button', { name: /Editar miembro/i })
+            .first()
+            .click();
+        await expect(page.getByText('Actualizar Pago')).toBeVisible();
+
+        // Cambiar el estado
+        await page.getByLabel('Estado').selectOption('Pagado');
+        await page.getByLabel('Fecha de Pago').fill('2026-06-10');
+
+        // Guardar
+        await page.getByRole('button', { name: 'Actualizar Pago' }).click();
+        await expect(
+            page.getByRole('button', { name: 'Actualizar Pago' }),
+        ).toBeHidden();
+
+        // Verificar cambio en la tabla
+        await expect(page.getByText('Pagado')).toBeVisible({
+            timeout: 10000,
+        });
+        await expect(page.getByText('Pendiente')).toBeHidden();
+    });
+
 
 
 
