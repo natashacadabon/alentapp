@@ -5,6 +5,10 @@ import { LockerValidator } from '../../domain/services/LockerValidator.js';
 import { UpdateLockerUseCase } from './UpdateLockerUseCase.js';
 import type { LockerDTO } from '@alentapp/shared';
 
+/**
+ * Tests Unitarios para UpdateLockerUseCase (TDD_0002)
+ * Cubre los casos de uso para actualizar un Locker existente
+ */
 describe('UpdateLockerUseCase', () => {
     const mockLockerRepo = {
         findById: vi.fn(),
@@ -39,6 +43,9 @@ describe('UpdateLockerUseCase', () => {
         vi.mocked(mockMemberRepo.findById).mockResolvedValue({ id: 'member-1' } as any);
     });
 
+    /**
+     * Rechazar actualización si el locker no existe
+     */
     it('debe lanzar error si el locker no existe', async () => {
         vi.mocked(mockLockerRepo.findById).mockResolvedValueOnce(null);
 
@@ -47,6 +54,9 @@ describe('UpdateLockerUseCase', () => {
         ).rejects.toThrow('El Locker no existe');
     });
 
+    /**
+     * Actualizar locker exitosamente con datos válidos
+     */
     it('debe actualizar locker cuando el payload es valido', async () => {
         const updatedLocker: LockerDTO = {
             ...baseLocker,
@@ -70,6 +80,9 @@ describe('UpdateLockerUseCase', () => {
         });
     });
 
+    /**
+     * Rechazar actualización si el nuevo número ya existe en otro locker
+     */
     it('debe rechazar numero duplicado', async () => {
         vi.mocked(mockLockerRepo.findByNumber).mockResolvedValueOnce({
             ...baseLocker,
@@ -82,6 +95,9 @@ describe('UpdateLockerUseCase', () => {
         ).rejects.toThrow('Ya existe un Locker con ese número');
     });
 
+    /**
+     * Rechazar asignación de socio si el locker está en mantenimiento
+     */
     it('debe rechazar asignacion si el locker esta en mantenimiento', async () => {
         vi.mocked(mockLockerRepo.findById).mockResolvedValueOnce({
             ...baseLocker,
@@ -93,6 +109,9 @@ describe('UpdateLockerUseCase', () => {
         ).rejects.toThrow('El Locker está en mantenimiento y no puede asignarse');
     });
 
+    /**
+     * Rechazar cambio a mantenimiento si el locker tiene un socio asignado
+     */
     it('debe rechazar pasar a mantenimiento si tiene socio asignado', async () => {
         vi.mocked(mockLockerRepo.findById).mockResolvedValueOnce({
             ...baseLocker,
@@ -107,6 +126,9 @@ describe('UpdateLockerUseCase', () => {
         );
     });
 
+    /**
+     * Rechazar reasignación a otro socio si el locker ya está ocupado
+     */
     it('debe rechazar reasignacion cuando ya esta ocupado por otro socio', async () => {
         vi.mocked(mockLockerRepo.findById).mockResolvedValueOnce({
             ...baseLocker,
@@ -119,6 +141,9 @@ describe('UpdateLockerUseCase', () => {
         ).rejects.toThrow('El Locker ya se encuentra ocupado');
     });
 
+    /**
+     * Rechazar asignación si el socio no existe en la base de datos
+     */
     it('debe rechazar asignacion cuando el socio no existe', async () => {
         vi.mocked(mockMemberRepo.findById).mockResolvedValueOnce(null);
 
