@@ -1,353 +1,216 @@
 import React from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { PaymentsView } from './Payments';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MemberDTO, PaymentDTO } from '@alentapp/shared';
 import { Provider } from '../components/ui/provider';
+import { membersService } from '../services/members';
+import { paymentsService } from '../services/payments';
+import { PaymentsView } from './Payments';
 
-const mockFetchPayments = vi.fn();
-const mockOpenCreateModal = vi.fn();
-const mockOpenUpdateModal = vi.fn();
-const mockSetIsDialogOpen = vi.fn();
-const mockUpdateField = vi.fn();
-const mockResetMemberSearch = vi.fn();
-const mockSetMemberSearchValue = vi.fn();
-const mockOpenCancelPaymentDialog = vi.fn();
-const mockCloseCancelPaymentDialog = vi.fn();
-const mockCancelPayment = vi.fn();
-
-// Se mockean hooks para controlar estado y acciones desde cada escenario.
-vi.mock('../hooks/usePayments', () => ({
-    usePayments: vi.fn(),
+// Mockeamos servicios para aislar la UI de llamadas reales a API.
+vi.mock('../services/payments', () => ({
+    paymentsService: {
+        create: vi.fn(),
+        getAll: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+    },
 }));
 
-vi.mock('../hooks/usePaymentForm', () => ({
-    usePaymentForm: vi.fn(),
+vi.mock('../services/members', () => ({
+    membersService: {
+        getAll: vi.fn(),
+    },
 }));
-
-vi.mock('../hooks/useMemberSearch', () => ({
-    useMemberSearch: vi.fn(),
-}));
-
-// Se mockean componentes hijos para enfocar las pruebas en la vista principal.
-vi.mock('../components/PaymentFormDialog', () => ({
-    PaymentFormDialog: () =>
-        React.createElement('div', null, 'PaymentFormDialog mock'),
-}));
-
-vi.mock('../components/ConfirmActionDialog', () => ({
-    ConfirmActionDialog: ({ title, children, onConfirm }: any) =>
-        children
-            ? React.createElement(
-                  'div',
-                  { role: 'dialog' },
-                  React.createElement('h2', null, title),
-                  children,
-                  React.createElement(
-                      'button',
-                      { onClick: onConfirm },
-                      'Confirmar mock',
-                  ),
-              )
-            : null,
-}));
-
-import { usePayments } from '../hooks/usePayments';
-import { usePaymentForm } from '../hooks/usePaymentForm';
-import { useMemberSearch } from '../hooks/useMemberSearch';
 
 describe('PaymentsView', () => {
-    // Helper de render con Provider para replicar el contexto real de UI.
+    // Datos base reutilizados por los tests.
+    const member: MemberDTO = {
+        id: 'member-1',
+        name: 'Juan Perez',
+        dni: '12345678',
+        email: 'juan@test.com',
+        birthdate: '1990-01-01',
+        category: 'Pleno',
+        status: 'Activo',
+        created_at: '2026-05-01T00:00:00.000Z',
+    };
+
+    const payment: PaymentDTO = {
+        id: 'payment-1',
+        member_id: member.id,
+        member: {
+            name: member.name,
+            dni: member.dni,
+        },
+        amount: 15000,
+        month: 5,
+        year: 2026,
+        due_date: '2026-06-01T00:00:00.000Z',
+        payment_date: null,
+        status: 'Pendiente',
+    };
+
     const renderWithProviders = (ui: React.ReactElement) => {
+        // Wrapper para inyectar el Provider global de la app.
         return render(<Provider>{ui}</Provider>);
     };
 
-    // Estado base del hook de pagos; cada test ajusta solo lo que necesita.
-    const mockUsePaymentsBase = {
-        payments: [],
-        isLoading: false,
-        error: null,
-        paymentToCancel: null,
-        isCancellingPayment: false,
-        cancelError: null,
-        fetchPayments: mockFetchPayments,
-        openCancelPaymentDialog: mockOpenCancelPaymentDialog,
-        closeCancelPaymentDialog: mockCloseCancelPaymentDialog,
-        cancelPayment: mockCancelPayment,
-    };
-
-    // Estado base del hook de formulario de pagos.
-    const mockUsePaymentFormBase = {
-        formMode: 'create',
-        formData: {
-            member_id: '',
-            amount: 0,
-            month: 1,
-            year: 2026,
-            due_date: '2026-05-10',
-        },
-        isDialogOpen: false,
-        isSubmitting: false,
-        setIsDialogOpen: mockSetIsDialogOpen,
-        openCreateModal: mockOpenCreateModal,
-        openUpdateModal: mockOpenUpdateModal,
-        updateField: mockUpdateField,
-        updateMonth: vi.fn(),
-        updateYear: vi.fn(),
-        submitPayment: vi.fn(),
-    };
-
-    // Estado base del hook de búsqueda de socios.
-    const mockUseMemberSearchBase = {
-        memberSearch: '',
-        memberResults: [],
-        memberSearchRef: { current: null },
-        searchMembers: vi.fn(),
-        handleSelectMember: vi.fn(),
-        resetMemberSearch: mockResetMemberSearch,
-        setMemberSearchValue: mockSetMemberSearchValue,
-    };
-
-    // Setup común: limpia mocks y restablece retornos base de los hooks.
     beforeEach(() => {
+        // Reiniciamos y configuramos respuestas por defecto para cada prueba.
         vi.clearAllMocks();
-
-        vi.mocked(usePayments).mockReturnValue(mockUsePaymentsBase as any);
-        vi.mocked(usePaymentForm).mockReturnValue(mockUsePaymentFormBase as any);
-        vi.mocked(useMemberSearch).mockReturnValue(mockUseMemberSearchBase as any);
+        // Por defecto, el servicio de pagos responde con una lista vacía para validar estados iniciales.
+        vi.mocked(paymentsService.getAll).mockResolvedValue([]);
+        vi.mocked(paymentsService.create).mockResolvedValue(payment);
+        vi.mocked(paymentsService.update).mockResolvedValue({
+            ...payment,
+            status: 'Pagado',
+            payment_date: '2026-06-10T00:00:00.000Z',
+        });
+        vi.mocked(paymentsService.delete).mockResolvedValue(undefined);
+        vi.mocked(membersService.getAll).mockResolvedValue([member]);
     });
 
-    // Limpia el DOM entre tests para evitar contaminación entre casos.
-    afterEach(() => {
-        cleanup();
-    });
-
-    // Test 1: Verifica render del título, descripción y acciones principales.
-    it('1. debe renderizar el título y acciones principales', () => {
+    it('debe mostrar el estado de carga y luego una tabla vacia', async () => {
+        // Renderizamos la vista y validamos el mensaje de carga inicial.
         renderWithProviders(<PaymentsView />);
-
-        // 1.1 Verifica el título principal de la vista
-        expect(
-            screen.getByText('Administración de Pagos'),
-        ).toBeInTheDocument();
-
-        // 1.2 Verifica la descripción de la vista
-        expect(
-            screen.getByText('Gestiona los pagos de los integrantes de Alentapp.'),
-        ).toBeInTheDocument();
-
-        // 1.3 Verifica las acciones principales
-        expect(screen.getByText('Actualizar')).toBeInTheDocument();
-        expect(screen.getByText('Agregar Pago')).toBeInTheDocument();
-    });
-
-    // Test 2: Verifica estado de carga cuando isLoading es true.
-    it('2. debe mostrar estado de carga cuando isLoading es true', () => {
-        vi.mocked(usePayments).mockReturnValue({
-            ...mockUsePaymentsBase,
-            isLoading: true,
-        } as any);
-
-        renderWithProviders(<PaymentsView />);
-
-        // 2.1 Verifica que se muestre el mensaje de carga
+        // Validamos que el mensaje de carga se muestre inicialmente.
         expect(screen.getByText('Cargando pagos...')).toBeInTheDocument();
-    });
-
-    // Test 3: Verifica mensaje de tabla vacía cuando no hay pagos.
-    it('3. debe mostrar mensaje de tabla vacía cuando no hay pagos', () => {
-        renderWithProviders(<PaymentsView />);
-
-        // 3.1 Verifica que se muestre el mensaje de listado vacío
-        expect(screen.getByText('No se encontraron pagos.')).toBeInTheDocument();
-
-        // 3.2 Verifica que exista la acción de reintentar
-        expect(screen.getByText('Reintentar')).toBeInTheDocument();
-    });
-
-    // Test 4: Verifica mensaje de error cuando usePayments devuelve error.
-    it('4. debe mostrar mensaje de error cuando usePayments devuelve error', () => {
-        vi.mocked(usePayments).mockReturnValue({
-            ...mockUsePaymentsBase,
-            error: 'No se pudieron cargar los pagos',
-        } as any);
-
-        renderWithProviders(<PaymentsView />);
-
-        // 4.1 Verifica el bloque de error
-        expect(screen.getByText('Error:')).toBeInTheDocument();
+        // Esperamos a que el mensaje de carga desaparezca y se muestre el estado de tabla vacía.
+        await waitFor(() => {
+            expect(
+                screen.queryByText('Cargando pagos...'),
+            ).not.toBeInTheDocument();
+        });
+        // Validamos que se muestre el mensaje de tabla vacía cuando no hay pagos.
         expect(
-            screen.getByText('No se pudieron cargar los pagos'),
+            screen.getByText('No se encontraron pagos.'),
         ).toBeInTheDocument();
+        expect(paymentsService.getAll).toHaveBeenCalledOnce();
     });
 
-    // Test 5: Verifica render de tabla y datos cuando existen pagos.
-    it('5. debe renderizar la tabla de pagos cuando existen pagos', () => {
-        vi.mocked(usePayments).mockReturnValue({
-            ...mockUsePaymentsBase,
-            payments: [
-                {
-                    id: 'payment-1',
-                    member_id: 'member-1',
-                    member: {
-                        name: 'Juan Pérez',
-                        dni: '12345678',
-                    },
-                    amount: 15000,
-                    month: 5,
-                    year: 2026,
-                    due_date: '2026-05-10',
-                    payment_date: null,
-                    status: 'Pendiente',
-                },
-            ],
-        } as any);
-
+    it('debe renderizar pagos cuando el servicio responde exitosamente', async () => {
+        // Forzamos una lista con un pago para validar render de filas.
+        vi.mocked(paymentsService.getAll).mockResolvedValue([payment]);
+        // Renderizamos la vista y esperamos a que los datos se muestren.
         renderWithProviders(<PaymentsView />);
-
-        // 5.1 Verifica columnas principales
-        expect(screen.getByText('Nombre del socio')).toBeInTheDocument();
-        expect(screen.getByText('DNI')).toBeInTheDocument();
-        expect(screen.getByText('Monto')).toBeInTheDocument();
-        expect(screen.getByText(/Per.*odo/)).toBeInTheDocument();
-        expect(screen.getByText('Estado')).toBeInTheDocument();
-
-        // 5.2 Verifica datos del pago
-        expect(screen.getByText('Juan Pérez')).toBeInTheDocument();
+        // Validamos que la información del pago se muestre correctamente en la tabla.
+        await waitFor(() => {
+            expect(screen.getByText('Juan Perez')).toBeInTheDocument();
+        });
+        // Validamos campos clave del pago.
         expect(screen.getByText('12345678')).toBeInTheDocument();
         expect(screen.getByText('5/2026')).toBeInTheDocument();
         expect(screen.getByText('Pendiente')).toBeInTheDocument();
     });
 
-    // Test 6: Verifica que Actualizar dispara fetchPayments.
-    it('6. debe llamar a fetchPayments al hacer click en Actualizar', async () => {
-        const user = userEvent.setup();
-
-        renderWithProviders(<PaymentsView />);
-
-        // 6.1 Ejecuta la acción de actualizar
-        await user.click(screen.getByText('Actualizar'));
-
-        // 6.2 Verifica que se invoque la recarga de pagos
-        expect(mockFetchPayments).toHaveBeenCalledOnce();
-    });
-
-    // Test 7: Verifica apertura del modal de creación al agregar pago.
-    it('7. debe abrir el modal de creación al hacer click en Agregar Pago', async () => {
-        const user = userEvent.setup();
-
-        renderWithProviders(<PaymentsView />);
-
-        // 7.1 Ejecuta la acción de agregar pago
-        await user.click(screen.getByText('Agregar Pago'));
-
-        // 7.2 Verifica que se limpie la búsqueda de socio
-        expect(mockResetMemberSearch).toHaveBeenCalledOnce();
-
-        // 7.3 Verifica que se abra el modal de creación
-        expect(mockOpenCreateModal).toHaveBeenCalledOnce();
-    });
-
-    // Test 8: Verifica apertura del modal de edición al editar un pago.
-    it('8. debe abrir el modal de edición al hacer click en editar pago', async () => {
-        const user = userEvent.setup();
-
-        vi.mocked(usePayments).mockReturnValue({
-            ...mockUsePaymentsBase,
-            payments: [
-                {
-                    id: 'payment-1',
-                    member_id: 'member-1',
-                    member: {
-                        name: 'Juan Pérez',
-                        dni: '12345678',
-                    },
-                    amount: 15000,
-                    month: 5,
-                    year: 2026,
-                    due_date: '2026-05-10',
-                    payment_date: null,
-                    status: 'Pendiente',
-                },
-            ],
-        } as any);
-
-        renderWithProviders(<PaymentsView />);
-
-        // 8.1 Ejecuta la acción de editar
-        await user.click(screen.getByLabelText('Editar miembro'));
-
-        // 8.2 Verifica que se setee el label del socio
-        expect(mockSetMemberSearchValue).toHaveBeenCalledWith(
-            'Juan Pérez - DNI: 12345678',
+    it('debe mostrar un mensaje de error si falla la carga de pagos', async () => {
+        // Simulamos error de backend y verificamos feedback al usuario.
+        vi.mocked(paymentsService.getAll).mockRejectedValueOnce(
+            new Error('No se pudieron cargar los pagos'),
         );
-
-        // 8.3 Verifica que se abra el modal de actualización
-        expect(mockOpenUpdateModal).toHaveBeenCalledWith(
-            expect.objectContaining({
-                id: 'payment-1',
-            }),
-        );
-    });
-
-    // Test 9: Verifica apertura del diálogo de cancelación al cancelar un pago.
-    it('9. debe abrir el diálogo de cancelación al hacer click en cancelar pago', async () => {
-        const user = userEvent.setup();
-
-        const payment = {
-            id: 'payment-1',
-            member_id: 'member-1',
-            member: {
-                name: 'Juan Pérez',
-                dni: '12345678',
-            },
-            amount: 15000,
-            month: 5,
-            year: 2026,
-            due_date: '2026-05-10',
-            payment_date: null,
-            status: 'Pendiente',
-        };
-
-        vi.mocked(usePayments).mockReturnValue({
-            ...mockUsePaymentsBase,
-            payments: [payment],
-        } as any);
+        // Renderizamos la vista y esperamos a que se muestre el mensaje de error.
 
         renderWithProviders(<PaymentsView />);
-
-        // 9.1 Ejecuta la acción de cancelar pago
-        await user.click(screen.getByLabelText('Cancelar pago'));
-
-        // 9.2 Verifica que se invoque la apertura del diálogo con el pago
-        expect(mockOpenCancelPaymentDialog).toHaveBeenCalledWith(payment);
+        // Validamos que el mensaje de error se muestre al fallar la carga.
+        await waitFor(() => {
+            expect(
+                screen.getByText('No se pudieron cargar los pagos'),
+            ).toBeInTheDocument();
+        });
     });
 
-    // Test 10: Verifica render del diálogo cuando existe paymentToCancel.
-    it('10. debe mostrar diálogo de cancelación cuando hay paymentToCancel', () => {
-        vi.mocked(usePayments).mockReturnValue({
-            ...mockUsePaymentsBase,
-            paymentToCancel: {
-                id: 'payment-1',
+    it('debe volver a consultar pagos al hacer click en Actualizar', async () => {
+        const user = userEvent.setup();
+        // Renderizamos la vista y esperamos a que se muestre la información inicial.
+
+        renderWithProviders(<PaymentsView />);
+        // Esperamos a que el mensaje de carga desaparezca para validar la interacción.
+        await waitFor(() => {
+            expect(
+                screen.queryByText('Cargando pagos...'),
+            ).not.toBeInTheDocument();
+        });
+        // Simulamos click en el botón de actualizar y validamos que se vuelva a consultar la lista de pagos.
+        await user.click(screen.getByRole('button', { name: /Actualizar/i }));
+        // Validamos que el servicio de pagos se haya llamado nuevamente para refrescar la lista.
+        expect(paymentsService.getAll).toHaveBeenCalledTimes(2);
+    });
+    // Test unitario de vista con flujo completo de creación desde la UI.
+    it('debe permitir crear un pago desde el formulario', async () => {
+        const user = userEvent.setup();
+        // Renderizamos la vista y esperamos a que se muestre la información inicial.
+        renderWithProviders(<PaymentsView />);
+        // Esperamos a que el mensaje de carga desaparezca para validar la interacción.
+        await waitFor(() => {
+            expect(
+                screen.queryByText('Cargando pagos...'),
+            ).not.toBeInTheDocument();
+        });
+        // Simulamos el flujo de creación de un pago desde la UI, incluyendo selección de socio y llenado de formulario.
+        await user.click(screen.getByRole('button', { name: /Agregar Pago/i }));
+        await user.type(
+            screen.getByPlaceholderText('Buscar por nombre o DNI'),
+            'Juan',
+        );
+        // Esperamos a que se muestren los resultados de búsqueda y seleccionamos el socio.
+        await waitFor(() => {
+            expect(screen.getByText('Juan Perez')).toBeInTheDocument();
+        });
+        // Simulamos la selección del socio en el dropdown.
+        fireEvent.mouseDown(screen.getByText('Juan Perez'));
+        // Llenamos el formulario con datos válidos para crear el pago.
+        const monthInput = screen.getByDisplayValue('4');
+        const yearInput = screen.getByDisplayValue('2026');
+        const amountInput = screen.getByDisplayValue('0');
+        const dueDateInput = screen.getByDisplayValue('2026-05-01');
+        // Limpiamos y llenamos cada campo del formulario con los datos del nuevo pago.
+        await user.clear(monthInput);
+        await user.type(monthInput, '5');
+        await user.clear(yearInput);
+        await user.type(yearInput, '2026');
+        await user.clear(amountInput);
+        await user.type(amountInput, '15000');
+        fireEvent.change(dueDateInput, { target: { value: '2026-06-01' } });
+        // Simulamos el envío del formulario para crear el pago.
+        await user.click(screen.getByRole('button', { name: 'Crear Pago' }));
+
+        // Confirmamos el payload exacto enviado al servicio.
+        await waitFor(() => {
+            expect(paymentsService.create).toHaveBeenCalledWith({
                 member_id: 'member-1',
                 amount: 15000,
                 month: 5,
                 year: 2026,
-                due_date: '2026-05-10',
-                payment_date: null,
-                status: 'Pendiente',
-            },
-        } as any);
+                due_date: '2026-06-01',
+            });
+        });
+    });
 
+    it('debe permitir cancelar un pago existente', async () => {
+        const user = userEvent.setup();
+        // Partimos de un pago pendiente para habilitar la acción de cancelación.
+        vi.mocked(paymentsService.getAll).mockResolvedValue([payment]);
+        // Renderizamos la vista y esperamos a que se muestre la información del pago.
         renderWithProviders(<PaymentsView />);
-
-        // 10.1 Verifica el título del diálogo de cancelación
-        expect(screen.getByText('Cancelar pago')).toBeInTheDocument();
-
-        // 10.2 Verifica que se muestre el período del pago a cancelar
-        expect(screen.getByText('5/2026')).toBeInTheDocument();
-
-        // 10.3 Verifica que se muestre el monto
-        expect(screen.getByText(/15\.000,00|15000/)).toBeInTheDocument();
+        // Esperamos a que el mensaje de carga desaparezca y se muestre el pago para validar la interacción.
+        await waitFor(() => {
+            expect(screen.getByText('Juan Perez')).toBeInTheDocument();
+        });
+        // Simulamos el flujo de cancelación de un pago desde la UI, incluyendo apertura de modal y confirmación.
+        await user.click(screen.getByLabelText('Cancelar pago'));
+        // Validamos que se abra el modal de confirmación al hacer click en cancelar.
+        expect(
+            screen.getByRole('heading', { name: 'Cancelar pago' }),
+        ).toBeInTheDocument();
+        // Simulamos la confirmación de cancelación en el modal.
+        await user.click(
+            screen.getByRole('button', { name: /cancelar pago/i }),
+        );
+        // Confirmamos que se haya llamado al servicio de eliminación con el ID correcto del pago.
+        await waitFor(() => {
+            expect(paymentsService.delete).toHaveBeenCalledWith('payment-1');
+        });
     });
 });
