@@ -76,7 +76,7 @@ test.describe('Payments Full-Stack E2E', () => {
         ).toBeVisible();
         await expect(page.getByText('Pendiente')).toBeVisible();
     });
-    
+
     test('debe editar el pago creado y ver el cambio en la tabla', async ({
         page,
     }) => {
@@ -112,6 +112,33 @@ test.describe('Payments Full-Stack E2E', () => {
     });
 
 
+    test('debe cancelar el pago y mostrar el estado cancelado', async ({
+        page,
+    }) => {
+        await page.goto('/payments');
 
+        // El pago deberia seguir ahi tras el test anterior
+        await expect(page.getByText('Socio Pago E2E')).toBeVisible({
+            timeout: 10000,
+        });
+        await expect(page.getByText('Pagado')).toBeVisible();
+
+        // Clic en cancelar
+        await page.getByRole('button', { name: /Cancelar pago/i }).click();
+        await expect(
+            page.getByRole('heading', { name: 'Cancelar pago' }),
+        ).toBeVisible();
+
+        // Confirmar cancelacion
+        await page
+            .getByRole('button', { name: /cancelar pago/i })
+            .last()
+            .click();
+
+        // El pago deberia quedar cancelado
+        await expect(page.getByText('Cancelado')).toBeVisible({
+            timeout: 10000,
+        });
+    });
 
 });
