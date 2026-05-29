@@ -244,3 +244,46 @@ describe('SportsView - Update', () => {
     }));
   });
 });
+
+describe('SportsView - Delete', () => {
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(<Provider>{ui}</Provider>);
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  //unit 15
+  it('debe permitir eliminar un deporte con confirmación', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+
+    const mockSports = [
+      { id: '1', name: 'Fútbol', description: 'Fútbol 11', max_capacity: 22, additional_price: 500, requires_medical_certificate: true }
+    ] as SportDTO[];
+
+    vi.mocked(sportsService.getAll).mockResolvedValue(mockSports);
+    vi.mocked(sportsService.delete).mockResolvedValueOnce(undefined);
+
+    // Interceptamos el ConfirmActionDialog — necesitamos simular el clic en confirmar
+    renderWithProviders(<SportsView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Fútbol')).toBeInTheDocument();
+    });
+
+    // Clic en eliminar
+    const deleteButton = screen.getByLabelText(/Eliminar deporte/i);
+    await user.click(deleteButton);
+
+    // Verificamos que el modal de confirmación aparece
+    expect(screen.getByText('Eliminar Deporte')).toBeInTheDocument();
+
+    // Confirmamos la eliminación
+    const confirmButton = screen.getByText('Eliminar');
+    await user.click(confirmButton);
+
+    //Comprobamos que el servicio de eliminación fue llamado exactamente con el ID 1
+    expect(sportsService.delete).toHaveBeenCalledWith('1');
+  });
+});
