@@ -96,6 +96,22 @@ describe('Sport API Integration Tests - Update', () => {
             expect(body.data.max_capacity).toBe(30);
         });
 
+        //integration 2
+        it('debe retornar 404 si el deporte no existe', async () => {
+            const payload: UpdateSportRequest = {
+                max_capacity: 30,
+            };
+
+            const response = await app.inject({
+                method: 'PATCH',
+                url: '/api/v1/sport/999',
+                payload
+            });
+
+            expect(response.statusCode).toBe(404);
+            const body = JSON.parse(response.payload);
+            expect(body.error).toBe('El deporte indicado no se encuentra registrado');
+        });
         
     });
 });
