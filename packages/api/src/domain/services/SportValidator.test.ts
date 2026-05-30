@@ -19,8 +19,8 @@ describe('SportValidator', () => {
     describe('validateMaxCapacity', () => {
         //unit 10
         it('debe lanzar error si max_capacity es invalida', () => {
-            expect(() => validator.validateMaxCapacity(0)).toThrow('La capacidad maxima debe ser mayor a cero');
-            expect(() => validator.validateMaxCapacity(-5)).toThrow('La capacidad maxima debe ser mayor a cero');
+            expect(() => validator.validateMaxCapacity(0)).toThrow('La capacidad máxima debe ser mayor a cero');
+            expect(() => validator.validateMaxCapacity(-5)).toThrow('La capacidad máxima debe ser mayor a cero');
         });
         //unit 11
         it('no debe lanzar error si max_capacity es válido', () => {

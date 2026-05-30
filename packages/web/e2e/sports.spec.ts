@@ -60,6 +60,26 @@ test.describe('Sports E2E (UI Integration)', () => {
       }
     });
 
+    // Interceptor para el POST
+    await page.route(/\/api\/v1\/sport$/, async (route) => {
+        if (route.request().method() === 'POST') {
+            const payload = route.request().postDataJSON();
+            const newSport = {
+                id: String(mockDb.length + 1),
+                ...payload
+            };
+            mockDb.push(newSport);
+
+            await route.fulfill({
+                status: 201,
+                contentType: 'application/json',
+                body: JSON.stringify({ data: newSport })
+            });
+        } else {
+            await route.continue();
+        }
+    });
+
     // interceptor para el PATCH
     await page.route(/\/api\/v1\/sport\/(?<id>\d+)/, async (route) => {
       const method = route.request().method();
@@ -94,6 +114,7 @@ test.describe('Sports E2E (UI Integration)', () => {
       }
     });
 
+
     // Va a la vista de deportes después de configurar todos las rutas
     await page.goto('/sports');
   });
@@ -102,6 +123,20 @@ test.describe('Sports E2E (UI Integration)', () => {
     // Verificamos que nuestro dato simulado esté pintado en la tabla HTML real
     await expect(page.getByText('Fútbol')).toBeVisible();
     await expect(page.getByText('22')).toBeVisible();
+  });
+    
+  test('debe abrir el modal de creación y crear un deporte', async ({ page }) => {
+    await page.locator('button:has-text("Agregar Deporte")').click();
+    await expect(page.getByText('Agregar Nuevo Deporte')).toBeVisible();
+
+    await page.getByPlaceholder('Ej. Fútbol').fill('Voley E2E');
+    await page.getByPlaceholder('Ej. 20').fill('12');
+    await page.getByPlaceholder('Ej. 500').fill('200');
+
+    await page.getByRole('button', { name: 'Crear Deporte' }).click();
+
+    await expect(page.getByRole('button', { name: 'Crear Deporte' })).toBeHidden();
+    await expect(page.getByText('Voley E2E')).toBeVisible();
   });
 
   test('debe abrir el modal de edición, actualizar datos y mostrar el cambio', async ({ page }) => {
