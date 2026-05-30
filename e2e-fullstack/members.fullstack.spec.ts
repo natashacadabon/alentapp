@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { cleanMembers } from './utils/cleanDB.js';
 
 /**
  * Tests E2E Full-Stack para la vista de Miembros.
@@ -12,6 +13,9 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Members Full-Stack E2E', () => {
+  test.beforeAll(async () => {
+    await cleanMembers();
+  });
 
   test('debe mostrar el estado vacío cuando no hay miembros en la DB', async ({ page }) => {
     await page.goto('/members');
