@@ -98,5 +98,23 @@ describe('Sport API End-to-End Tests', () => {
         expect(body.error).toBe('Ya existe un deporte con ese nombre');
     });
 
-    
+    it('4. POST: Debe fallar si se intenta crear un deporte con la capacidad máxima es cero', async () => {
+        const payload = {
+            name: `Deporte Invalido ${randomSuffix}`,
+            description: '',
+            max_capacity: 0,
+            additional_price: 0,
+            requires_medical_certificate: false,
+        };
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/sport',
+            payload
+        });
+
+        expect(response.statusCode).toBe(400);
+        const body = JSON.parse(response.payload);
+        expect(body.error).toBe('La capacidad máxima debe ser mayor a cero');
+    });   
 });
