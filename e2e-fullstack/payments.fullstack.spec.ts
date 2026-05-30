@@ -92,7 +92,9 @@ test.describe('Payments Full-Stack E2E', () => {
             .getByRole('button', { name: /Editar miembro/i })
             .first()
             .click();
-        await expect(page.getByText('Actualizar Pago')).toBeVisible();
+        await expect(
+            page.getByRole('heading', { name: 'Actualizar Pago' }),
+        ).toBeVisible();
 
         // Cambiar el estado
         await page.getByLabel('Estado').selectOption('Pagado');
@@ -136,9 +138,9 @@ test.describe('Payments Full-Stack E2E', () => {
             .click();
 
         // El pago deberia quedar cancelado
-        await expect(page.getByText('Cancelado')).toBeVisible({
-            timeout: 10000,
-        });
+        await expect(
+            page.getByRole('cell', { name: 'Cancelado' }),
+        ).toBeVisible({ timeout: 10000 });
     });
 
 });
