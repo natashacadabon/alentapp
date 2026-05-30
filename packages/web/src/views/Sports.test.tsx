@@ -25,7 +25,6 @@ describe('SportsView - Create', () => {
     vi.clearAllMocks();
   });
   
-  //unit 1- Mostrar estado de carga y tabla vacía
   it('debe mostrar el estado de carga y luego renderizar tabla vacía', async () => {
     // Simulamos que el backend no tiene deportes
     vi.mocked(sportsService.getAll).mockResolvedValueOnce([]);
@@ -44,7 +43,6 @@ describe('SportsView - Create', () => {
     expect(screen.getByText('No se encontraron deportes.')).toBeInTheDocument();
   });
 
-  //unit 2 - Renderizar lista de deportes exitosa
   it('debe renderizar la lista de deportes si el backend responde exitosamente', async () => {
     const mockSports = [
       { id: '1', name: 'Fútbol', description: 'Fútbol 11', max_capacity: 22, additional_price: 500, requires_medical_certificate: true },
@@ -68,7 +66,6 @@ describe('SportsView - Create', () => {
     expect(screen.getByText('Natación')).toBeInTheDocument();
   });
 
-  //unit 3 - Mostrar error si el servicio falla
   it('debe renderizar un mensaje de error si el servicio backend falla', async () => {
     // Simulamos un error 500
     vi.mocked(sportsService.getAll).mockRejectedValueOnce(new Error('Servidor caído'));
@@ -81,7 +78,6 @@ describe('SportsView - Create', () => {
     });
   });
 
-  //unit 4 - Abrir modal de creación al hacer clic
   it('debe abrir el modal de creación al hacer clic en Agregar Deporte', async () => {
     const user = (await import('@testing-library/user-event')).default.setup();
 
@@ -102,7 +98,6 @@ describe('SportsView - Create', () => {
     expect(screen.getByText('Agregar Nuevo Deporte')).toBeInTheDocument();
   });
 
-  //unit 5 - Crear un deporte mediante el formulario
   it('debe permitir crear un nuevo deporte mediante el formulario', async () => {
     const user = (await import('@testing-library/user-event')).default.setup();
 
@@ -146,7 +141,6 @@ describe('SportsView - Create', () => {
     }));
   });
 
-  // unit 6 - Mostrar error cuando el backend rechaza la creación
   it('debe mostrar error cuando el backend rechaza la creación', async () => {
     const user = (await import('@testing-library/user-event')).default.setup();
 
@@ -198,7 +192,6 @@ describe('SportsView - Update', () => {
     vi.clearAllMocks();
   });
 
-  //unit 14
   it('debe permitir editar un deporte existente', async () => {
     const user = (await import('@testing-library/user-event')).default.setup();
 
@@ -254,7 +247,6 @@ describe('SportsView - Delete', () => {
     vi.clearAllMocks();
   });
 
-  //unit 15
   it('debe permitir eliminar un deporte con confirmación', async () => {
     const user = (await import('@testing-library/user-event')).default.setup();
 
