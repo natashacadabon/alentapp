@@ -13,7 +13,7 @@ describe('DeleteMedicalCertificateUseCase', () => {
 
         repository = {
         // Simula el método que busca un certificado por id
-        findActiveByMemberId: vi.fn(),
+        findById: vi.fn(),
         // Simula el método que elimina un certificado
         delete: vi.fn(),
         } as unknown as MedicalCertificateRepository;
@@ -28,7 +28,7 @@ describe('DeleteMedicalCertificateUseCase', () => {
         const certificateId = 'certificate-123';
 
         // Simulamos que encuentra un certificado con ese id
-        vi.mocked(repository.findActiveByMemberId).mockResolvedValue({
+        vi.mocked(repository.findById).mockResolvedValue({
         id: certificateId,
         issue_date: new Date('2026-01-01'),
         expiry_date: new Date('2026-12-31'),
@@ -40,6 +40,9 @@ describe('DeleteMedicalCertificateUseCase', () => {
         // Ejecutamos el caso de uso
         await useCase.execute(certificateId);
 
+        // Verificamos que primero haya buscado el certificado por id.
+        expect(repository.findById).toHaveBeenCalledWith(certificateId);
+
         // Verificamos que el método delete haya sido llamado una vez
         expect(repository.delete).toHaveBeenCalledTimes(1);
     });
@@ -49,7 +52,7 @@ describe('DeleteMedicalCertificateUseCase', () => {
 
         const certificateId = 'certificate-456';
 
-        vi.mocked(repository.findActiveByMemberId).mockResolvedValue({
+        vi.mocked(repository.findById).mockResolvedValue({
         id: certificateId,
         issue_date: new Date('2026-01-01'),
         expiry_date: new Date('2026-12-31'),
@@ -70,12 +73,15 @@ describe('DeleteMedicalCertificateUseCase', () => {
 
         const certificateId = 'certificate-inexistente';
 
-        vi.mocked(repository.findActiveByMemberId).mockResolvedValue(null);
+        vi.mocked(repository.findById).mockResolvedValue(null);
 
         // Esperamos que al ejecutar el caso de uso se lance un error
         await expect(useCase.execute(certificateId)).rejects.toThrow(
         'El certificado indicado no se encuentra'
         );
+
+        // Verificamos que haya intentado buscar el certificado por id.
+        expect(repository.findById).toHaveBeenCalledWith(certificateId);
 
         // Verificamos que delete no haya sido llamado
         expect(repository.delete).not.toHaveBeenCalled();
