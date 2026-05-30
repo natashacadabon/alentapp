@@ -1,36 +1,36 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UpdateMedicalCertificateUseCase } from './UpdateMedicalCertificate.js';
-import { MedicalCertificateRepository } from '../../domain/MedicalCertificateRepository.js';
-import { MedicalCertificateValidator } from '../../domain/services/MedicalCertificateValidator.js';
-import { UpdateMedicalCertificateRequest } from '@alentapp/shared';
-import { stringify } from 'querystring';
+import type { MedicalCertificateRepository } from '../../domain/MedicalCertificateRepository.js';
+import type { MedicalCertificateValidator } from '../../domain/services/MedicalCertificateValidator.js';
+import type { UpdateMedicalCertificateRequest } from '@alentapp/shared';
 
 describe('UpdateMedicalCertificateUseCase', () => {
-
     let repository: MedicalCertificateRepository;
     let validator: MedicalCertificateValidator;
     let useCase: UpdateMedicalCertificateUseCase;
 
     beforeEach(() => {
+        // Mock del repositorio: el use case busca el certificado activo y luego actualiza.
         repository = {
             findActiveByMemberId: vi.fn(),
             update: vi.fn(),
         } as unknown as MedicalCertificateRepository;
 
+        // Mock del validator: permite controlar validaciones sin probar su implementacion interna.
         validator = {
             validateDates: vi.fn(),
             validateDoctorLicense: vi.fn(),
         } as unknown as MedicalCertificateValidator;
 
+        // Instanciamos el caso de uso con dependencias mockeadas.
         useCase = new UpdateMedicalCertificateUseCase(repository, validator);
     });
 
-    // Primer test: Verifica que se actualice correctamente un certificado médico existente
-    it('debería actualizar un certificado médico correctamente', async () => {
-        // Definimos el id del certificado que queremos actualizar
+    // Primer test: verifica el camino exitoso de actualizacion.
+    it('deberia actualizar un certificado medico correctamente', async () => {
         const id = 'certificate-1';
 
-        // Simulamos un certificado que ya existe en la base de datos
+        // Certificado activo existente que devuelve el repositorio.
         const existingCertificate = {
             id,
             issue_date: new Date('2026-05-01'),
@@ -40,85 +40,56 @@ describe('UpdateMedicalCertificateUseCase', () => {
             member_id: 'member-1',
         };
 
-        // Definimos los nuevos datos que queremos actualizar
+        // Datos nuevos enviados al caso de uso.
         const updateRequest: UpdateMedicalCertificateRequest = {
             issue_date: new Date('2026-05-10'),
             expiry_date: new Date('2026-12-10'),
             doctor_license: 'XYZ789',
         };
 
-        // Simulamos cómo debería quedar el certificado después de actualizarse
+        // Resultado simulado luego de actualizar en el repositorio.
         const updatedCertificate = {
-            id: id,
+            id,
             issue_date: new Date('2026-05-10'),
             expiry_date: new Date('2026-12-10'),
-            doctor_license: 'ABC123',
+            doctor_license: 'XYZ789',
             member_id: 'member-1',
             is_validated: true,
         };
 
-        vi.mocked(repository.findActiveByMemberId).mockResolvedValue(existingCertificate);
-
+        vi.mocked(repository.findActiveByMemberId).mockResolvedValue(
+            existingCertificate,
+        );
         vi.mocked(repository.update).mockResolvedValue(updatedCertificate);
 
         const result = await useCase.execute(id, updateRequest);
 
+        // Verifica que el use case busque el certificado activo.
         expect(repository.findActiveByMemberId).toHaveBeenCalledWith(id);
 
-        expect(validator.validateDates).toHaveBeenCalledWith(updateRequest);
+        // El use case convierte las fechas a Date y se las pasa separadas al validator.
+        expect(validator.validateDates).toHaveBeenCalledWith(
+            new Date('2026-05-10'),
+            new Date('2026-12-10'),
+        );
 
-        expect(repository.update).toHaveBeenCalledWith(id, updateRequest);
+        // El use case valida la matricula recibida.
+        expect(validator.validateDoctorLicense).toHaveBeenCalledWith('XYZ789');
 
-        // Verificamos que el resultado final sea el certificado actualizado
+        // El repositorio recibe solo los campos permitidos por el caso de uso.
+        expect(repository.update).toHaveBeenCalledWith(id, {
+            issue_date: updateRequest.issue_date,
+            expiry_date: updateRequest.expiry_date,
+            doctor_license: updateRequest.doctor_license,
+        });
+
         expect(result).toEqual(updatedCertificate);
     });
 
-    // Segundo test: Verificar si la fecha de vencimiento es anterior a la fecha de emisión
-    it('debería lanzar error si la fecha de vencimiento no es posterior a la fecha de emisión', async () => {
-        
-        const certificateId = 'certificate-1';
-    
-        const existingCertificate = {
-        id: certificateId,
-        issue_date: new Date('2026-05-01'),
-        expiry_date: new Date('2026-12-01'),
-        doctor_license: 'ABC123',
-        member_id: 'member-1',
-        is_validated: false,
-        };
-
-        // Datos inválidos: la fecha de vencimiento es anterior a la fecha de emisión
-        const invalidUpdateRequest: UpdateMedicalCertificateRequest = {
-        issue_date: new Date('2026-12-10'),
-        expiry_date: new Date('2026-05-10'),
-        doctor_license: 'ABC123',
-        };
-
-        // Simulamos que el certificado existe
-        vi.mocked(repository.findActiveByMemberId).mockResolvedValue(
-        existingCertificate,
-        );
-
-        
-        await expect(useCase.execute(certificateId, invalidUpdateRequest),).rejects.toThrow(
-        'La fecha de vencimiento debe ser posterior a la de emisión',
-        );
-
-        // Verificamos que se haya buscado el certificado
-        expect(repository.findActiveByMemberId).toHaveBeenCalledWith(
-        certificateId,
-        );
-
-        // Verificamos que no se actualice porque falló la validación
-        expect(repository.update).not.toHaveBeenCalled();
-    });
-
-
-    // Tercer test: Verifica que si la matrícula del médico está vacía
-        it('debería lanzar error si la matrícula del médico está vacía', async () => {
+    // Segundo test: verifica que una fecha de vencimiento invalida corte la actualizacion.
+    it('deberia lanzar error si la fecha de vencimiento no es posterior a la fecha de emision', async () => {
         const certificateId = 'certificate-1';
 
-        // Certificado existente simulado
         const existingCertificate = {
             id: certificateId,
             issue_date: new Date('2026-05-01'),
@@ -128,34 +99,71 @@ describe('UpdateMedicalCertificateUseCase', () => {
             is_validated: false,
         };
 
-        // Datos inválidos: la matrícula está vacía
+        const invalidUpdateRequest: UpdateMedicalCertificateRequest = {
+            issue_date: new Date('2026-12-10'),
+            expiry_date: new Date('2026-05-10'),
+            doctor_license: 'ABC123',
+        };
+
+        vi.mocked(repository.findActiveByMemberId).mockResolvedValue(
+            existingCertificate,
+        );
+        vi.mocked(validator.validateDates).mockImplementation(() => {
+            throw new Error(
+                'La fecha de vencimiento debe ser posterior a la de emision',
+            );
+        });
+
+        await expect(
+            useCase.execute(certificateId, invalidUpdateRequest),
+        ).rejects.toThrow(
+            'La fecha de vencimiento debe ser posterior a la de emision',
+        );
+
+        expect(repository.findActiveByMemberId).toHaveBeenCalledWith(
+            certificateId,
+        );
+        expect(validator.validateDates).toHaveBeenCalledWith(
+            new Date('2026-12-10'),
+            new Date('2026-05-10'),
+        );
+        expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    // Tercer test: verifica que una matricula vacia corte la actualizacion.
+    it('deberia lanzar error si la matricula del medico esta vacia', async () => {
+        const certificateId = 'certificate-1';
+
+        const existingCertificate = {
+            id: certificateId,
+            issue_date: new Date('2026-05-01'),
+            expiry_date: new Date('2026-12-01'),
+            doctor_license: 'ABC123',
+            member_id: 'member-1',
+            is_validated: false,
+        };
+
         const invalidUpdateRequest: UpdateMedicalCertificateRequest = {
             issue_date: new Date('2026-05-10'),
             expiry_date: new Date('2026-12-10'),
             doctor_license: '',
         };
 
-        // Simulamos que el certificado existe
         vi.mocked(repository.findActiveByMemberId).mockResolvedValue(
-        existingCertificate,
+            existingCertificate,
         );
-
         vi.mocked(validator.validateDoctorLicense).mockImplementation(() => {
-            throw new Error('La matrícula del médico es obligatoria');
+            throw new Error('La matricula del medico es obligatoria');
         });
 
-        // Esperamos que el use case lance el error del validateDoctorLicense
         await expect(
-        useCase.execute(certificateId, invalidUpdateRequest),
-        ).rejects.toThrow('La matrícula del médico es obligatoria');
+            useCase.execute(certificateId, invalidUpdateRequest),
+        ).rejects.toThrow('La matricula del medico es obligatoria');
 
-        // Verificamos que se haya buscado el certificado
         expect(repository.findActiveByMemberId).toHaveBeenCalledWith(
-        certificateId,
+            certificateId,
         );
-
-        // Verificamos que no se actualice porque falló la validación
+        expect(validator.validateDoctorLicense).toHaveBeenCalledWith('');
         expect(repository.update).not.toHaveBeenCalled();
     });
-
 });

@@ -10,6 +10,9 @@ describe('CreateMedicalCertificateUseCase', () => {
     // 1. Creamos los mocks de los repositorios de medicalCertificate y Member.
     const mockMedicalCertificateRepo = {
         create: vi.fn(), // Simulamos el método create.
+        createReplacingActive: vi.fn(),
+        findActiveByMemberId: vi.fn(),
+        invalidate: vi.fn(),
     } as unknown as MedicalCertificateRepository;
     const mockMemberRepo = {
         findById: vi.fn(),
@@ -45,10 +48,12 @@ describe('CreateMedicalCertificateUseCase', () => {
             created_at: '2020-01-01T00:00:00.000Z',
         });
 
-        vi.mocked(mockMedicalCertificateRepo.create).mockResolvedValueOnce({
+        vi.mocked(mockMedicalCertificateRepo.findActiveByMemberId).mockResolvedValueOnce(null);
+
+        vi.mocked(mockMedicalCertificateRepo.createReplacingActive).mockResolvedValueOnce({
             id: 'certificate-1',
             ...mockRequest,
-            is_validated: false,
+            is_validated: true,
             created_at: '2026-05-26T00:00:00.000Z',
             updated_at: '2026-05-26T00:00:00.000Z',
         });
@@ -58,13 +63,19 @@ describe('CreateMedicalCertificateUseCase', () => {
         // Verificamos que primero buscó al socio.
         expect(mockMemberRepo.findById).toHaveBeenCalledWith('member-1');
 
-        // Verificamos que el método create del repositorio fue llamado con los datos correctos.
-        expect(mockMedicalCertificateRepo.create).toHaveBeenCalledWith(
+        // Verificamos que buscó si ya existía un certificado activo del socio.
+        expect(mockMedicalCertificateRepo.findActiveByMemberId).toHaveBeenCalledWith('member-1');
+
+        // Verificamos que no intentó invalidar nada porque no había certificado activo previo.
+        expect(mockMedicalCertificateRepo.invalidate).not.toHaveBeenCalled();
+
+        // Verificamos que el método de creación con reemplazo fue llamado con los datos correctos.
+        expect(mockMedicalCertificateRepo.createReplacingActive).toHaveBeenCalledWith(
             expect.objectContaining({
-                issue_date: '2026-05-26',
-                expiry_date: '2026-12-26',
+                issue_date: new Date('2026-05-26'),
+                expiry_date: new Date('2026-12-26'),
                 doctor_license: 'MN123456',
-                is_validated: false,
+                is_validated: true,
                 member_id: 'member-1',
             })
         );
@@ -93,6 +104,7 @@ describe('CreateMedicalCertificateUseCase', () => {
 
         // Verificamos que no se haya llamado al repositorio. El certificado no debe guardarse.
         expect(mockMedicalCertificateRepo.create).not.toHaveBeenCalled();
+        expect(mockMedicalCertificateRepo.createReplacingActive).not.toHaveBeenCalled();
     });
 
     //Tercer test: Validación de member_id. Verifica que no se pueda crear un certificado si no está asociado a ningún socio.
@@ -109,6 +121,7 @@ describe('CreateMedicalCertificateUseCase', () => {
 
         // Verificamos que no se haya intentado guardar nada.
         expect(mockMedicalCertificateRepo.create).not.toHaveBeenCalled();
+        expect(mockMedicalCertificateRepo.createReplacingActive).not.toHaveBeenCalled();
     });
 
     //Cuarto test: Validación de fechas. Verifica que no se pueda crear un certificado si la fecha de emisión es posterior a la fecha de expiración.
@@ -125,6 +138,7 @@ describe('CreateMedicalCertificateUseCase', () => {
 
         // Verificamos que no se haya intentado guardar nada.
         expect(mockMedicalCertificateRepo.create).not.toHaveBeenCalled();
+        expect(mockMedicalCertificateRepo.createReplacingActive).not.toHaveBeenCalled();
     });
 
     //Quinto test: Verificar si el socio existe antes de crear el certificado. 
@@ -146,5 +160,6 @@ describe('CreateMedicalCertificateUseCase', () => {
 
         // Como el socio no existe, no se debe crear el certificado.
         expect(mockMedicalCertificateRepo.create).not.toHaveBeenCalled();
+        expect(mockMedicalCertificateRepo.createReplacingActive).not.toHaveBeenCalled();
     });
 });
