@@ -42,7 +42,6 @@ describe('Sport API End-to-End Tests', () => {
             method: 'GET',
             url: '/api/v1/sport' 
         });
-        console.log("ERROR INTERNO:", response.payload); 
 
         expect(response.statusCode).toBe(200);
         const body = JSON.parse(response.payload);
