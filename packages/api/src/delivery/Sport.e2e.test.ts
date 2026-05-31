@@ -98,7 +98,7 @@ describe('Sport API End-to-End Tests', () => {
         expect(body.error).toBe('Ya existe un deporte con ese nombre');
     });
 
-    it('4. POST: Debe fallar si se intenta crear un deporte con la capacidad máxima es cero', async () => {
+    it('4. POST: Debe fallar si se intenta crear un deporte con la capacidad máxima igual a cero', async () => {
         const payload = {
             name: `Deporte Invalido ${randomSuffix}`,
             description: '',
@@ -116,5 +116,32 @@ describe('Sport API End-to-End Tests', () => {
         expect(response.statusCode).toBe(400);
         const body = JSON.parse(response.payload);
         expect(body.error).toBe('La capacidad máxima debe ser mayor a cero');
-    });   
+    });  
+    
+    it('5. PATCH: Debe fallar si se intenta modificar el nombre (Inmutable)', async () => {
+        const payload = {
+            name: 'Nuevo Nombre Intento Hack',
+            max_capacity: 30,
+            description: 'Intentando cambiar capacidad y nombre a la vez'
+        };
+
+        const response = await app.inject({
+            method: 'PATCH',
+            url: `/api/v1/sport/${createdSportId}`,
+            payload
+        });
+
+        // La API debe rechazar la solicitud por intentar modificar un campo inmutable
+        expect(response.statusCode).toBe(400);
+        
+        const body = JSON.parse(response.payload);
+        expect(body.error).toBe('Solo se permite modificar description y max_capacity');
+
+        // Verificación de seguridad en la base de datos: El nombre original debe seguir intacto
+        const dbSport = await prisma.sport.findUnique({ where: { id: createdSportId } });
+        expect(dbSport).not.toBeNull();
+        expect(dbSport?.name).toBe(testSportName); 
+    });
+
+    
 });
