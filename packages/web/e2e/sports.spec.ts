@@ -3,22 +3,11 @@ import { test, expect } from '@playwright/test';
 test.use({ launchOptions: { slowMo: 800 } });
 
 test.describe('Sports E2E (UI Integration)', () => {
-  // estado simulado de la DB se define a nivel de describe para mantener el contexto
-  let mockDb: Array<{
-    id: string;
-    name: string;
-    description: string;
-    max_capacity: number;
-    additional_price: number;
-    requires_medical_certificate: boolean;
-  }>;
-
   test.beforeEach(async ({ page }) => {
     page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
-
-    // Reiniciamos los datos antes de CADA test para asegurar idempotencia
-    // para que cada test arranque con el mismo estado inicial sin depender del anterior
-    mockDb = [
+    
+    // Estado en memoria simulando la Base de Datos para estos tests
+    const mockDb = [
       {
         id: '1',
         name: 'Fútbol',
@@ -29,93 +18,72 @@ test.describe('Sports E2E (UI Integration)', () => {
       }
     ];
 
-    // Interceptamos todas las llamadas de red para aislar le front
-
-    // Manejo de peticiones globales (CORS OPTIONS)
+    // Interceptamos todas las llamadas de red hacia nuestro backend de deportes
+    // De este modo, nuestros tests E2E del frontend son resilientes y no dependen 
+    // de que la base de datos de PostgreSQL esté levantada.
     await page.route(/\/api\/v1\/sport/, async (route) => {
-      if (route.request().method() === 'OPTIONS') {
-        return route.fulfill({
-          status: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          }
-        });
-      }
-      await route.continue();
-    });
+      const method = route.request().method();
 
-    // Interceptor para el GET 
-    // usamos $ al final para que solo matchee /api/v1/sport sin ID
-    await page.route(/\/api\/v1\/sport$/, async (route) => {
-      if (route.request().method() === 'GET') {
+      if (method === 'GET') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({ data: mockDb })
         });
-      } else {
-        await route.continue();
-      }
-    });
+      } 
+      else if (method === 'POST') {
+        const payload = route.request().postDataJSON();
+        const newSport = {
+          id: String(mockDb.length + 1),
+          description: '', 
+          requires_medical_certificate: false,
+          ...payload
+        };
+       
+        mockDb.push(newSport);
 
-    // Interceptor para el POST
-    await page.route(/\/api\/v1\/sport$/, async (route) => {
-        if (route.request().method() === 'POST') {
-            const payload = route.request().postDataJSON();
-            const newSport = {
-                id: String(mockDb.length + 1),
-                ...payload
-            };
-            mockDb.push(newSport);
-
-            await route.fulfill({
-                status: 201,
-                contentType: 'application/json',
-                body: JSON.stringify({ data: newSport })
-            });
-        } else {
-            await route.continue();
-        }
-    });
-
-    // interceptor para el PATCH
-    await page.route(/\/api\/v1\/sport\/(?<id>\d+)/, async (route) => {
-      const method = route.request().method();
-      
-      if (method === 'PATCH') {
-        // Playwright nos permite extraer los parámetros de la URL
-        const url = route.request().url();
-        const matches = url.match(/\/api\/v1\/sport\/(?<id>\w+)/);
-        const id = matches?.groups?.id;
-
+        // Simulamos la creación exitosa devolviendo lo creado
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({ data: newSport })
+        });
+      } 
+      else if (method === 'OPTIONS') {
+        await route.fulfill({
+          status: 200,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS', // Tu backend usa PATCH
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          }
+        });
+      } 
+      else if (method === 'PATCH') {
+        const urlObj = new URL(route.request().url());
+        const id = urlObj.pathname.split('/').pop();
         const payload = route.request().postDataJSON();
         const index = mockDb.findIndex(s => String(s.id) === String(id));
-
+        
+        console.log('PATCH payload', payload, 'found index', index);
+        
         if (index > -1) {
-          // Actualizamos nuestra base de datos en memoria para que el próximo GET
           mockDb[index] = { ...mockDb[index], ...payload };
-          
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({ data: mockDb[index] })
           });
         } else {
-          await route.fulfill({ 
-            status: 404, 
-            contentType: 'application/json',
-            body: JSON.stringify({ error: 'Not found' }) 
-          });
+          await route.fulfill({ status: 404, body: JSON.stringify({ error: 'Not found' }) });
         }
-      } else {
+      } 
+      else {
         await route.continue();
       }
     });
 
-
-    // Va a la vista de deportes después de configurar todos las rutas
+    // Navegamos directamente a la vista de deportes
     await page.goto('/sports');
   });
 
@@ -124,11 +92,15 @@ test.describe('Sports E2E (UI Integration)', () => {
     await expect(page.getByText('Fútbol')).toBeVisible();
     await expect(page.getByText('22')).toBeVisible();
   });
-    
-  test('debe abrir el modal de creación y crear un deporte', async ({ page }) => {
+
+  test('debe abrir el modal de creación y enviar el formulario de red', async ({ page }) => {
+    // Buscar y clickear en "Agregar Deporte"
     await page.locator('button:has-text("Agregar Deporte")').click();
+
+    // Verificamos que el modal se abrió
     await expect(page.getByText('Agregar Nuevo Deporte')).toBeVisible();
 
+    // Llenar el formulario simulando tipeo real de usuario usando tus placeholders
     await page.getByPlaceholder('Ej. Fútbol').fill('Voley E2E');
     await page.getByPlaceholder('Ej. 20').fill('12');
     await page.getByPlaceholder('Ej. 500').fill('200');
@@ -136,28 +108,27 @@ test.describe('Sports E2E (UI Integration)', () => {
     await page.getByRole('button', { name: 'Crear Deporte' }).click();
 
     await expect(page.getByRole('button', { name: 'Crear Deporte' })).toBeHidden();
+
+    // Verificamos que el componente hizo refresh y muestra el nuevo deporte en la tabla
     await expect(page.getByText('Voley E2E')).toBeVisible();
   });
 
   test('debe abrir el modal de edición, actualizar datos y mostrar el cambio', async ({ page }) => {
-    // Aseguramos que el deporte existe en la tabla antes de editar
-    await expect(page.getByText('Fútbol')).toBeVisible();
-
-    // Abrimos el modal de edición
+    // Buscar y clickear en el botón de edición del deporte existente
     await page.getByRole('button', { name: /Editar deporte/i }).click();
+
+    // Verificamos que el modal se abrió con el título correcto
     await expect(page.getByText('Editar Deporte')).toBeVisible();
 
-    // Modificamos la capacidad máxima
     await page.getByLabel(/Capacidad Máxima/i).fill('30');
 
-    // Guardamos los cambios
     await page.getByRole('button', { name: 'Guardar Cambios' }).click();
 
-    // Validamos que el modal desapareció de la pantalla
+    // Esperar que se cierre
     await expect(page.getByRole('button', { name: 'Guardar Cambios' })).toBeHidden();
 
-    // Verificamos que la UI refleja el cambio
+    // Verificar en la tabla que se actualizó el valor reflejado por el PATCH
     await expect(page.getByText('30')).toBeVisible();
   });
-
+  
 });
