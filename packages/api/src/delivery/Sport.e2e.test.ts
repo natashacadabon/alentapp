@@ -143,5 +143,34 @@ describe('Sport API End-to-End Tests', () => {
         expect(dbSport?.name).toBe(testSportName); 
     });
 
-    
+    it('6. PATCH: Debe permitir modificar en la base de datos real si se envian los campos modificables y son validos', async () => {
+        const payload = {
+            max_capacity: 45,
+            description: 'Descripción actualizada desde el test E2E',
+        };
+
+        const response = await app.inject({
+            method: 'PATCH',
+            url: `/api/v1/sport/${createdSportId}`,
+            payload
+        });
+
+        // Verificamos que la respuesta sea exitosa
+        expect(response.statusCode).toBe(200);
+        const body = JSON.parse(response.payload);
+        
+        // Comprobamos que los datos cambiaron en la respuesta de la API
+        expect(body.data.max_capacity).toBe(45);
+        expect(body.data.description).toBe('Descripción actualizada desde el test E2E');
+        
+        // El nombre debe seguir siendo el mismo de siempre
+        expect(body.data.name).toBe(testSportName);
+
+        // Verificación E2E directo en la base de datos con Prisma
+        const dbSport = await prisma.sport.findUnique({ where: { id: createdSportId } });
+        expect(dbSport).not.toBeNull();
+        expect(dbSport!.max_capacity).toBe(45);
+        expect(dbSport!.description).toBe('Descripción actualizada desde el test E2E');
+        expect(dbSport!.name).toBe(testSportName); // Name no se alteró
+    });
 });
