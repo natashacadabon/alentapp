@@ -18,6 +18,49 @@ vi.mock('../infrastructure/PostgresMemberRepository.js', () => {
     };
 });
 
+vi.mock('../infrastructure/PostgresSportRepository.js', () => {
+    return {
+        PostgresSportRepository: class {
+            async findAll() { return [{ id: '1', name: 'Fútbol', description: 'Desc vieja', max_capacity: 22, additional_price: 500, requires_medical_certificate: true }]; }
+            async findById(id: string) { return id === '1' ? { id: '1', name: 'Fútbol', description: 'Desc vieja', max_capacity: 22, additional_price: 500, requires_medical_certificate: true } : null; }
+            async findByName(name: string) { return name === 'Fútbol Existente' ? { id: '1', name: 'Fútbol Existente' } : null; }
+            async create(data: any) { return { id: '2', ...data }; }
+            async update(id: string, data: any) { return { id, name: 'Fútbol', additional_price: 500, requires_medical_certificate: true, ...data }; }
+            async delete(id: string) { return; }
+        }
+    };
+});
+
+vi.mock('../infrastructure/PostgresPaymentRepository.js', () => ({
+    PostgresPaymentRepository: class {
+        async findAll() { return []; }
+        async findById() { return null; }
+        async create(data: any) { return { id: '1', ...data }; }
+        async update(id: string, data: any) { return { id, ...data }; }
+        async delete() { return; }
+    }
+}));
+
+vi.mock('../infrastructure/PostgresLockerRepository.js', () => ({
+    PostgresLockerRepository: class {
+        async findAll() { return []; }
+        async findById() { return null; }
+        async create(data: any) { return { id: '1', ...data }; }
+        async update(id: string, data: any) { return { id, ...data }; }
+        async delete() { return; }
+    }
+}));
+
+vi.mock('../infrastructure/PostgresMedicalCertificateRepository.js', () => ({
+    PostgresMedicalCertificateRepository: class {
+        async findAll() { return []; }
+        async findById() { return null; }
+        async create(data: any) { return { id: '1', ...data }; }
+        async update(id: string, data: any) { return { id, ...data }; }
+        async delete() { return; }
+    }
+}));
+
 describe('Member API Integration Tests', () => {
     let app: FastifyInstance;
 

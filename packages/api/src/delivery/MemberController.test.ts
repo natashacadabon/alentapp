@@ -24,7 +24,8 @@ describe('MemberController', () => {
     const mockRequest = {
         log: { info: vi.fn() },
         body: { name: 'Juan' },
-        params: { id: '123' }
+        params: { id: '123' },
+        query: {} // agrego porque lo maneja en getAll del controller
     };
 
     beforeEach(() => {
