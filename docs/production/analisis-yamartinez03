@@ -66,7 +66,7 @@
 OpenTelemetry (OTel) es un framework de observabilidad open-source que permite instrumentar una aplicación para capturar datos sobre su comportamiento en tiempo de ejecución. Provee APIs, SDKs y herramientas para generar, recolectar y exportar datos de telemetría (métricas, trazas y logs). Es vendor-neutral, es decir, independiente de cualquier proveedor o herramienta específica — una aplicación instrumentada con OTel puede exportar su telemetría a cualquier backend compatible (Prometheus, Jaeger, Datadog, etc.) sin necesidad de modificar el código de instrumentación. Es un estándar mantenido por la CNCF (Cloud Native Computing Foundation).
 
 #### Diferencia de Prometheus
-**Prometheus** es una herramienta de *monitoreo y almacenamiento de métricas* que incluye su propio modelo de datos, lenguaje de consulta (PromQL) y sistema de scraping. e encarga de recolectar, almacenar y consultar métricas, pero no está diseñado para manejar trazas distribuidas ni logs de forma nativa.
+**Prometheus** es una herramienta de *monitoreo y almacenamiento de métricas* que incluye su propio modelo de datos, lenguaje de consulta (PromQL) y sistema de scraping. Se encarga de recolectar, almacenar y consultar métricas, pero no está diseñado para manejar trazas distribuidas ni logs de forma nativa.
  
 Las diferencias clave son:
  
@@ -136,12 +136,11 @@ Aplicación (instrumentada con OTel SDK)
  OpenTelemetry Collector
         ↓ 
     Grafana Stack 
-        ↓ Prometheus (métricas)
-        ↓ Loki (logs)
-        ↓ Tempo (trazas)
+    ├─ Prometheus (métricas)
+    ├─ Loki (logs)
+    └─ Tempo (trazas)
+        ↓ 
     Grafana (consulta y renderiza dashboards)
 ```
  
 Grafana también soporta directamente **Grafana Tempo** como backend de trazas (compatible con OTLP), y **Grafana Loki** para logs, formando la suite de observabilidad completa de Grafana.
- 
-Desde 2022, Grafana tiene soporte nativo para recibir datos OTLP directamente (sin necesidad de Prometheus como intermediario), a través de su producto **Grafana Cloud** o configurando el **Grafana Agent** como collector OTLP.
