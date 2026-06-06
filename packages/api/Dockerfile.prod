@@ -8,7 +8,7 @@ COPY package*.json ./
 COPY packages/api/package*.json ./packages/api/
 COPY packages/shared/package*.json ./packages/shared/
 
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 
 # ---------- Stage 2: build ----------
@@ -20,7 +20,7 @@ COPY package*.json ./
 COPY packages/api/package*.json ./packages/api/
 COPY packages/shared/package*.json ./packages/shared/
 
-RUN npm ci
+RUN npm install
 
 COPY . .
 
@@ -50,6 +50,6 @@ USER appuser
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3000/health || exit 1
+  CMD wget -qO- http://127.0.0.1:3000/health || exit 1
 
 CMD ["node", "packages/api/dist/app.js"]
