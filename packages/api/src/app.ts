@@ -1,3 +1,5 @@
+// PRIMERO: inicializar OpenTelemetry (antes de cualquier otro import)
+import './infrastructure/telemetry.js';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { PostgresMemberRepository } from './infrastructure/PostgresMemberRepository.js';
