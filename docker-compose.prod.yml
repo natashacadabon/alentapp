@@ -30,7 +30,6 @@ services:
     api:
       build:
         context: .
-
         dockerfile: packages/api/Dockerfile.prod
 
       container_name: alentapp-api
@@ -53,6 +52,7 @@ services:
 
       ports:
         - "3000:3000"
+        - "9464:9464"  # Puerto de métricas OpenTelemetry
 
       # Puede comunicarse con la base y con el frontend
       networks:
@@ -74,46 +74,45 @@ services:
         retries: 5
 
     web:
-        
-          build:
-          context: .
+      build:
+        context: .
+        dockerfile: packages/web/Dockerfile.prod
 
-          dockerfile: packages/web/Dockerfile.prod
-          container_name: alentapp-web
-          restart: unless-stopped
+      container_name: alentapp-web
+      restart: unless-stopped
 
-          # El frontend espera a que la API esté disponible
-          depends_on:
-            api:
-              condition: service_healthy
+      # El frontend espera a que la API esté disponible
+      depends_on:
+        api:
+          condition: service_healthy
 
-          ports:
-          - "80:80"
+      ports:
+        - "80:80"
 
-          networks:
-            - frontend
+      networks:
+        - frontend
 
-          # Evita modificaciones accidentales del contenedor
-          read_only: true
+      # Evita modificaciones accidentales del contenedor
+      read_only: true
 
-          # Directorios temporales requeridos por nginx
-          tmpfs:
-          - /var/cache/nginx
-          - /var/run
+      # Directorios temporales requeridos por nginx
+      tmpfs:
+        - /var/cache/nginx
+        - /var/run
 
-          # Comprueba que nginx esté respondiendo
-          healthcheck:
-            test: ["CMD-SHELL", "wget -qO- http://localhost || exit 1"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
+      # Comprueba que nginx esté respondiendo
+      healthcheck:
+        test: ["CMD-SHELL", "wget -qO- http://localhost || exit 1"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
 
 volumes:
-# Guarda la información de PostgreSQL
+  # Guarda la información de PostgreSQL
   pgdata:
 
 networks:
-  api: # Comunicación privada API <-> DB
+  backend: # Comunicación privada API <-> DB
     driver: bridge
-  web: # Comunicación privada web <-> API
+  frontend: # Comunicación privada web <-> API
     driver: bridge
