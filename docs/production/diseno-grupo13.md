@@ -104,3 +104,140 @@ Rendimiento|Servir archivos estáticos optimizados|Vite genera archivos minifica
 Disponibilidad|Healthcheck HTTP activo|Permite detectar si el servidor web está corriendo y respondiendo correctamente.
 Reproducibilidad|Uso de `npm ci`|	Garantiza que las mismas versiones de dependencias se instalen en cada build.
 Mantenibilidad|	Separación entre build y runtime|	Facilita distinguir claramente entre la etapa de compilación y la etapa de ejecución.
+## docker-compose.prod.yml
+### Proposito
+El archivo `docker-compose.prod.yml` tiene como objetivo definir y orquestar todos los servicios necesarios para ejecutar la aplicación AlentApp en un entorno productivo o pre-productivo. A diferencia de un archivo `docker-compose.yml` orientado al desarrollo local, esta configuración debe evitar herramientas de desarrollo, volúmenes de código fuente, credenciales hardcodeadas y comandos como `npm run dev` o `tsx watch`.
+
+Su función principal es coordinar la ejecución de los servicios que componen el sistema, estableciendo cómo se construyen o consumen las imágenes, cómo se comunican entre sí, qué variables de entorno necesitan, qué puertos se exponen, qué volúmenes se utilizan para persistencia y qué políticas de disponibilidad se aplican.
+
+Este archivo debe permitir levantar una infraestructura más cercana a producción, incorporando:
+* Base de datos PostgreSQL.
+* API backend Node.js/TypeScript.
+* Frontend React/Vite servido con Nginx.
+* OpenTelemetry Collector.
+* Prometheus.
+* Grafana.
+* Volúmenes persistentes.
+* Healthchecks.
+* Políticas de reinicio.
+* Redes internas separadas.
+
+La finalidad es lograr una arquitectura más segura, observable, mantenible y reproducible.
+### Estructura
+|Sección|Elemento|Propósito|
+|-------|--------|---------|
+|`services`|	Define los contenedores principales|Agrupa todos los servicios que forman parte de la aplicación y de la infraestructura de observabilidad.
+|`db`|PostgreSQL 16|Almacenar de forma persistente la información del sistema.
+|`api`|Backend Node.js/TypeScript|Exponer la API REST, aplicar reglas de negocio y comunicarse con la base de datos.
+|`web`|Frontend Nginx|Servir la aplicación React compilada como archivos estáticos.
+|`otel-collector`|	OpenTelemetry Collector|	Recibir métricas, logs y trazas desde la API y exportarlas hacia herramientas de monitoreo.
+`prometheus`|	Prometheus|	Almacenar métricas temporales y permitir consultas sobre el estado del sistema.
+|`grafana`|	Grafana|	Visualizar métricas mediante dashboards.
+|`volumes`|	Volúmenes| persistentes	Conservar datos de PostgreSQL y configuraciones/datos de Grafana aunque los contenedores se reinicien.
+|`networks`|	Redes Docker internas|	Aislar la comunicación entre servicios y evitar exposición innecesaria.
+### Servicios principales
+#### Servicio `db`
+El servicio `db` representa la base de datos PostgreSQL 16. Su responsabilidad es almacenar la información persistente de la aplicación. En producción no se recomienda exponer PostgreSQL públicamente hacia el exterior, sino permitir que únicamente la API pueda comunicarse con la base de datos mediante la red interna de Docker.
+
+Debe utilizar un volumen persistente para evitar pérdida de datos ante reinicios o recreación del contenedor. Las credenciales deben obtenerse desde variables de entorno externas o secretos, evitando valores hardcodeados en el archivo.
+
+Responsabilidades principales:
+
+* Persistir datos de la aplicación.
+* Permitir conexiones internas desde la API.
+* Mantener datos aunque el contenedor sea recreado.
+* Utilizar credenciales externas.
+* Incluir healthcheck para verificar disponibilidad.
+#### Servicio `api`
+
+El servicio `api` representa el backend de la aplicación. Debe ejecutarse utilizando la imagen generada a partir de `packages/api/Dockerfile`.prod. A diferencia del entorno de desarrollo, no debe montar el código fuente con `.:/app` ni ejecutar herramientas de hot reload.
+
+La API debe iniciarse en modo producción, conectarse a PostgreSQL mediante variables de entorno y exponer únicamente el puerto necesario para recibir solicitudes desde el frontend o desde un reverse proxy.
+
+Responsabilidades principales:
+
+* Exponer endpoints REST.
+* Ejecutar reglas de negocio.
+* Conectarse a PostgreSQL.
+* Exportar telemetría mediante OpenTelemetry.
+* Incluir healthcheck.
+* Reiniciarse automáticamente ante fallos.
+
+#### Servicio `web`
+
+El servicio `web` representa el frontend de la aplicación. Debe ejecutarse utilizando la imagen generada a partir de `packages/web/Dockerfile.prod`, donde la aplicación React/Vite ya fue compilada y servida mediante Nginx.
+
+En producción no debe ejecutarse `npm run dev`, ya que ese comando corresponde al servidor de desarrollo de Vite. El contenedor final debe servir únicamente archivos estáticos optimizados.
+
+Responsabilidades principales:
+
+* Servir la aplicación React compilada.
+* Responder solicitudes HTTP.
+* Redirigir rutas SPA hacia `index.html`.
+* Incluir healthcheck HTTP.
+* Exponer el puerto HTTP necesario.
+
+#### Servicio `otel-collector`
+
+El servicio `otel-collector` se encarga de recibir datos de telemetría generados por la aplicación. Estos datos pueden incluir métricas, logs y trazas. El collector actúa como intermediario entre la aplicación y las herramientas de observabilidad.
+
+Su uso permite desacoplar la aplicación del backend de monitoreo. La API no necesita conocer directamente a Prometheus o Grafana; simplemente exporta telemetría mediante OTLP hacia el collector.
+
+Responsabilidades principales:
+
+* Recibir telemetría OTLP desde la API.
+* Procesar métricas, logs y trazas.
+* Exportar métricas hacia Prometheus.
+* Centralizar la configuración de observabilidad.
+
+#### Servicio `prometheus`
+
+Prometheus se utiliza para almacenar métricas temporales y permitir consultas sobre el estado del sistema. Puede obtener métricas desde el OpenTelemetry Collector y almacenarlas para su posterior visualización.
+
+Responsabilidades principales:
+
+* Almacenar métricas.
+* Permitir consultas mediante PromQL.
+* Servir como fuente de datos para Grafana.
+* Facilitar alertas sobre el estado de los servicios.
+
+#### Servicio `grafana`
+
+Grafana se utiliza como herramienta de visualización. Permite construir dashboards para monitorear el comportamiento del sistema y analizar métricas relevantes como cantidad de solicitudes, errores, duración de respuestas, uso de CPU y memoria, entre otras.
+
+Responsabilidades principales:
+
+* Visualizar métricas.
+* Crear dashboards.
+* Conectarse a Prometheus como datasource.
+* Facilitar el monitoreo operativo del sistema.
+
+### Requisitos técnicos
+
+El diseño debe cumplir con los siguientes requisitos:
+
+* Usar imágenes productivas generadas por `Dockerfile.prod`.
+* No montar el código fuente con `.:/app`.
+* No ejecutar comandos de desarrollo como `npm run dev` o `tsx watch`.
+* Utilizar variables de entorno externas para credenciales y configuraciones sensibles.
+* Definir healthchecks para servicios críticos.
+* Configurar políticas de reinicio como restart: unless-stopped.
+* Utilizar volúmenes persistentes para PostgreSQL y Grafana.
+* Separar servicios mediante redes internas.
+* Evitar exponer puertos innecesarios.
+* Permitir la comunicación interna entre `api`, `db` y servicios de observabilidad.
+* Incluir OpenTelemetry Collector, Prometheus y Grafana para observabilidad.
+* Definir límites de recursos cuando sea posible
+### Requisitos no funcionales
+Requisito|Valor esperado|	Justificación|
+|----------|------------|------|
+Disponibilidad|Reinicio automático de servicios críticos|Permite recuperar servicios ante caídas inesperadas sin intervención manual.
+Seguridad|Sin credenciales hardcodeadas|	Evita exponer usuarios, contraseñas o tokens dentro del repositorio.
+Aislamiento|	Redes internas separadas|	Reduce exposición innecesaria y limita la comunicación sólo a los servicios que la necesitan.
+Persistencia|	Volúmenes para PostgreSQL y Grafana	|Evita pérdida de datos ante reinicios o recreación de contenedores.
+Observabilidad|	OpenTelemetry, Prometheus y Grafana	|Permite monitorear métricas, errores, latencia y estado general del sistema.
+Reproducibilidad|	Imágenes productivas versionadas|	Garantiza que el mismo artefacto pueda ejecutarse de forma consistente.|
+Performance	|Sin hot reload ni herramientas dev|	Reduce consumo de CPU y memoria en producción.
+Mantenibilidad|	Separación clara de servicios	|Facilita diagnosticar errores, actualizar componentes y escalar partes del sistema.
+Startup	|Menor a 30 segundos para servicios principales	|El sistema debe recuperarse rápidamente ante reinicios.
+Gestión de recursos|	Límites de CPU y memoria|	Evita que un contenedor consuma todos los recursos del host.
