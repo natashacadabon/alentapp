@@ -9,7 +9,7 @@ COPY packages/api/package*.json ./packages/api/
 COPY packages/shared/package*.json ./packages/shared/
 COPY packages/web/package*.json ./packages/web/
 
-RUN npm ci
+RUN npm install
 
 COPY . .
 
@@ -23,7 +23,7 @@ ENV NODE_ENV=production
 
 # Minimal SPA config: static files + client-side routing fallback.
 RUN rm -f /etc/nginx/conf.d/default.conf && \
-    printf 'server {\n  listen 80;\n  server_name _;\n  root /usr/share/nginx/html;\n  index index.html;\n\n  location / {\n    try_files $uri $uri/ /index.html;\n  }\n\n  location = /health {\n    access_log off;\n    add_header Content-Type text/plain;\n    return 200 "ok";\n  }\n}\n' > /etc/nginx/conf.d/default.conf
+  printf 'server {\n  listen 8080;\n  server_name _;\n  root /usr/share/nginx/html;\n  index index.html;\n\n  location / {\n    try_files $uri $uri/ /index.html;\n  }\n\n  location = /health {\n    access_log off;\n    add_header Content-Type text/plain;\n    return 200 "ok";\n  }\n}\n' > /etc/nginx/conf.d/default.conf
 
 COPY --from=build /app/packages/web/dist /usr/share/nginx/html
 
@@ -31,9 +31,9 @@ COPY --from=build /app/packages/web/dist /usr/share/nginx/html
 RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/run /etc/nginx/conf.d
 USER nginx
 
-EXPOSE 80
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost/health || exit 1
+  CMD wget -qO- http://127.0.0.1:8080/health || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
