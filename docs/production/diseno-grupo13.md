@@ -29,7 +29,7 @@ La utilización de una imagen reducida disminuye tiempos de despliegue, reduce l
 El Dockerfile debe organizarse en tres bloques bien diferenciados. 
 Primero, la etapa `deps`instala las dependencias productivas. Para garantizar instalaciones reproducibles se debe utilizar `npm ci`, porque respeta estrictamente el archivo `package-lock.json`. Al usar  `--omit=dev`, se excluyen dependencias como herramientas de testing, compiladores, linters o utilidades de desarrollo. 
 
- Luego, la etapa build se encarga de preparar el artefacto ejecutable. En esta etapa sí se instalan todas las dependencias, incluyendo las de desarrollo, porque son necesarias para compilar TypeScript. Como resultado, se genera una carpeta de salida, por ejemplo dist, que contiene el código JavaScript listo para ejecutarse.
+Luego, la etapa build se encarga de preparar el artefacto ejecutable. En esta etapa sí se instalan todas las dependencias, incluyendo las de desarrollo, porque son necesarias para compilar TypeScript. Como resultado, se genera una carpeta de salida, por ejemplo dist, que contiene el código JavaScript listo para ejecutarse.
 
 Finalmente, la etapa runtime copia solamente los elementos necesarios desde las etapas anteriores: los node_modules productivos y el código compilado. Esta etapa debe definir variables de entorno de producción, exponer el puerto correspondiente, configurar un usuario sin privilegios y ejecutar el servidor con node.
 ### Requisitos técnicos
@@ -52,3 +52,55 @@ Reproducible| Uso de `npm ci`| Garantiza que las mismas versiones se instalen en
 Disponibilidad | Healthcheck activo | Permite detectar si el proceso está vivo pero la API no responde correctamente. 
 Seguridad | Sin .env ni secretos en imagen | Evita exponeer credenciales dentro del artefacto Docker.
 
+## packages/web/Dockerfile.prod
+
+### Propósito 
+Este Dockerfile, `packages/web/Dockerfile.prod`, tiene como objetivo construir una imagen optimizada para ejecutar el frontend de la aplicación en un entorno productivo. A diferencia del entorno de desarrollo, donde se utiliza Vite con hot reload mediante `npm run dev`, en producción no se debe ejecutar el servidor de desarrollo ni incluir dependencias innecesarias. 
+El frontend debe compilarse previamente para generar archivos estáticos HTML, CSS y JavaScript. Luego, esos archivos deben ser servidos por un servidor web liviano y eficiente, como Nginx.
+
+La imagen final debe contener: 
+* Archivos estáticos generados por Vite.
+* Configuración mínima de Nginx.
+* Healthcheck HTTP.
+* Usuario sin privilegios cuando sea posible.
+
+Este diseño permite reducir el tamaño de la imagen, mejorar el tiempo de inicio, aumentar la seguridad y entregar la aplicación web de forma más eficiente.
+### Estructura
+|Etapa|Nombre|Base|Propósito|
+|--------|------|------|------|
+Stage 1| `build` | `node:22-alpine`| Instalar dependencias, compilar la aplicación React/Vite y generar la carpeta `dist` con los archivos estáticos finales. Esta etapa puede incluir herramientas de desarrollo porque no formará parte de la imagen final.|
+Stage 2 | `runtime` | `nginx:alpine` |Servir los archivos estáticos generados en la etapa anterior utilizando Nginx. Es la única etapa que se despliega en producción y no necesita incluir Node.js ni dependencias de desarrollo.
+
+### Secciones principales del Dockerfile
+
+El Dockerfile del frontend debe organizarse en dos etapas principales.
+
+Primero, la etapa `build` se encarga de instalar las dependencias del proyecto y ejecutar el proceso de compilación de Vite. Para garantizar instalaciones reproducibles, se debe utilizar `npm ci`, ya que respeta estrictamente las versiones definidas en el archivo `package-lock.json`. En esta etapa se genera la carpeta `dist`, que contiene la versión optimizada de la aplicación React lista para producción.
+
+Luego, la etapa `runtime`  utiliza una imagen base liviana de Nginx. En esta etapa se copian únicamente los archivos estáticos generados en `dist` hacia el directorio desde el cual Nginx sirve contenido web. Esto evita incluir Node.js, TypeScript, Vite, dependencias de desarrollo o código fuente innecesario en la imagen final.
+
+Además, esta etapa debe incluir una configuración mínima de Nginx para servir correctamente una aplicación SPA. Esto es importante porque React maneja rutas del lado del cliente, por lo que Nginx debe redirigir las rutas internas hacia `index.html`.
+
+### Requisitos técnicos
+
+El diseño debe cumplir con los siguientes requisitos:
+
+* Compilar la aplicación React/Vite antes de construir la imagen final.
+* No ejecutar `npm run dev` en producción.
+* No incluir Node.js en la imagen final.
+* Servir los archivos estáticos mediante Nginx.
+* Copiar únicamente la carpeta `dist` a la imagen final.
+* Incluir un `HEALTHCHECK` HTTP contra `localhost`.
+* Utilizar ` .dockerignore` para excluir archivos innecesarios como `node_modules`, `.git`, logs, archivos temporales y builds previos.
+* Evitar copiar archivos `.env` o secretos dentro de la imagen.
+* Exponer únicamente el puerto necesario para el frontend, por ejemplo `80`.
+### Requisitios no funcionales
+|Requisito| Valor esperado | Justificación|
+|--------|---------|----------|
+Tamaño máximo de imagen |Menor a 100 MB| Al usar `nginx:alpine` y copiar únicamente archivos estáticos, la imagen final queda considerablemente más liviana.|
+Tiempo de startup|Menor a 5 segundos|Nginx inicia muy rápido porque sólo debe servir archivos estáticos ya compilados.
+Seguridad|Sin Node.js en runtime|Reduce la superficie de ataque porque no se incluyen herramientas de build ni dependencias del ecosistema Node en producción.
+Rendimiento|Servir archivos estáticos optimizados|Vite genera archivos minificados y preparados para producción.
+Disponibilidad|Healthcheck HTTP activo|Permite detectar si el servidor web está corriendo y respondiendo correctamente.
+Reproducibilidad|Uso de `npm ci`|	Garantiza que las mismas versiones de dependencias se instalen en cada build.
+Mantenibilidad|	Separación entre build y runtime|	Facilita distinguir claramente entre la etapa de compilación y la etapa de ejecución.
