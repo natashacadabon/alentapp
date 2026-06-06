@@ -15,7 +15,7 @@ import {
 } from '@chakra-ui/react';
 import { LuPlus, LuRefreshCw, LuPencil, LuTrash2 } from 'react-icons/lu';
 import { useEffect, useState } from 'react';
-import { medicalCertificateService } from '../services/medicalCertificate';
+import { medicalCertificateService } from '../services/medicalcertificate';
 import type {
     MedicalCertificateDTO,
     CreateMedicalCertificateRequest,

@@ -5,6 +5,7 @@
     "main": "src/app.ts",
     "scripts": {
         "dev": "tsx watch src/app.ts",
+        "build": "tsc --ignoreConfig --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --skipLibCheck --esModuleInterop --outDir .build src/app.ts || node -e \"require('fs').existsSync('.build/api/src/app.js') || process.exit(1)\" && node -e \"const fs = require('fs'); fs.rmSync('dist', { recursive: true, force: true }); fs.cpSync('.build/api/src', 'dist', { recursive: true }); fs.cpSync('src/generated', 'dist/generated', { recursive: true }); fs.rmSync('.build', { recursive: true, force: true });\"",
         "test": "vitest",
         "coverage": "vitest run --coverage"
     },

@@ -68,13 +68,13 @@ services:
 
       # Verifica que la API responda correctamente
       healthcheck:
-        test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/socios || exit 1"]
+        test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
         interval: 10s
         timeout: 5s
         retries: 5
 
-      web:
-          
+    web:
+        
           build:
           context: .
 
