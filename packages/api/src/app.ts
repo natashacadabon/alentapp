@@ -232,11 +232,19 @@ export function buildApp() {
     server.post('/api/v1/lockers', lockerController.create.bind(lockerController));
     server.patch('/api/v1/lockers/:id', lockerController.update.bind(lockerController));
     server.delete('/api/v1/lockers/:id', lockerController.delete.bind(lockerController));
-
+    
+    server.get('/health', async (req, rep) => {
+        rep.status(200).send({ status: 'ok', 
+            service: 'API',
+            uptime: process.uptime(),
+        });
+    }   );
 
     server.get('/', async (req, rep) => {
         rep.status(200).send({ msg: 'asd' });
     });
+
+   
 
     return server;
 }
