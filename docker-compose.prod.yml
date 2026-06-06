@@ -68,7 +68,7 @@ services:
 
       # Verifica que la API responda correctamente
       healthcheck:
-        test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+        test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
         interval: 10s
         timeout: 5s
         retries: 5
@@ -87,7 +87,7 @@ services:
           condition: service_healthy
 
       ports:
-        - "80:80"
+        - "80:8080"
 
       networks:
         - frontend
@@ -97,22 +97,64 @@ services:
 
       # Directorios temporales requeridos por nginx
       tmpfs:
-        - /var/cache/nginx
-        - /var/run
+        - /var/cache/nginx:rw,uid=101,gid=101,mode=1775
+        - /var/run:rw,uid=101,gid=101,mode=0755
 
       # Comprueba que nginx esté respondiendo
       healthcheck:
-        test: ["CMD-SHELL", "wget -qO- http://localhost || exit 1"]
+        test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health || exit 1"]
         interval: 10s
         timeout: 5s
         retries: 5
 
+    prometheus:
+      image: prom/prometheus:latest
+      container_name: alentapp-prometheus
+      restart: unless-stopped
+
+      volumes:
+        - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+      ports:
+        - "9090:9090"
+
+      networks:
+        - monitoring
+
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+
+    grafana:
+      image: grafana/grafana:latest
+      container_name: alentapp-grafana
+      restart: unless-stopped
+
+      environment:
+        GF_SECURITY_ADMIN_USER: admin
+        GF_SECURITY_ADMIN_PASSWORD: admin
+
+      volumes:
+        - grafana_data:/var/lib/grafana
+
+      ports:
+        - "3001:3000"
+
+      networks:
+        - monitoring
+
+      depends_on:
+        - prometheus
+
 volumes:
   # Guarda la información de PostgreSQL
   pgdata:
+  # Guarda dashboards y configuración de Grafana
+  grafana_data:
 
 networks:
   backend: # Comunicación privada API <-> DB
     driver: bridge
   frontend: # Comunicación privada web <-> API
+    driver: bridge
+  monitoring: # Prometheus y Grafana
     driver: bridge
