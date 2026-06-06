@@ -241,3 +241,92 @@ Performance	|Sin hot reload ni herramientas dev|	Reduce consumo de CPU y memoria
 Mantenibilidad|	Separación clara de servicios	|Facilita diagnosticar errores, actualizar componentes y escalar partes del sistema.
 Startup	|Menor a 30 segundos para servicios principales	|El sistema debe recuperarse rápidamente ante reinicios.
 Gestión de recursos|	Límites de CPU y memoria|	Evita que un contenedor consuma todos los recursos del host.
+# Diseño de la Observabilidad
+El objetivo de esta sección es definir cómo se integrará OpenTelemetry dentro de la API para capturar métricas de rendimiento, disponibilidad y consumo de recursos. Estas métricas serán exportadas hacia Prometheus y posteriormente visualizadas mediante Grafana.
+
+La propuesta se basa en el método RED (Rate, Errors, Duration), ampliamente utilizado para monitorear servicios web y APIs.
+
+
+
+## Métricas RED a Capturar
+
+Se capturarán las tres métricas fundamentales del método RED:
+* Rate: cantidad de solicitudes procesadas.
+* Errors: cantidad de solicitudes que finalizan con error.
+* Duration: tiempo necesario para completar cada solicitud.
+
+| Métrica | Tipo OpenTelemetry | Descripción | Labels |
+|----------|----------|----------|----------|
+| Rate | Counter | Cantidad de requests recibidas por segundo. Permite medir la carga actual de la API. | `method`, `route`, `status` |
+| Errors | Counter | Cantidad de requests que finalizan con error (4xx y 5xx). Permite medir la confiabilidad del servicio. | `method`, `route`, `status` |
+| Duration | Histogram | Tiempo de respuesta de cada request. Permite analizar latencia y rendimiento percibido por los usuarios. | `method`, `route` |
+
+### Métricas adicionales
+Además de las métricas RED, se incorporarán indicadores relacionados con el estado interno de la aplicación.
+
+Estas métricas permiten detectar problemas de consumo de recursos antes de que generen una degradación significativa del servicio. 
+| Métrica | Tipo OpenTelemetry | Descripción |
+|----------|----------|----------|
+| `process.memory.usage` | Gauge | Consumo actual de memoria del proceso Node.js. |
+| `http.requests.active` | Gauge | Cantidad de requests concurrentes en ejecución. |
+
+---
+
+## OpenTelemetry SDK
+
+### Propósito
+
+El SDK de OpenTelemetry será responsable de instrumentar la aplicación Node.js para generar y exportar métricas automáticamente.
+Entre sus responsabilidades se encuentran:
+
+* Capturar métricas HTTP.
+* Registrar tiempos de respuesta.
+* Generar métricas personalizadas RED.
+* Exponer métricas del proceso Node.js.
+* Preparar futuras integraciones con logs y trazas distribuidas.
+
+### Componentes principales
+
+| Componente | Función |
+|------------|----------|
+| NodeSDK | Inicializa OpenTelemetry dentro de la aplicación. |
+| PrometheusExporter | Expone las métricas para que Prometheus pueda recolectarlas. |
+| Auto Instrumentation | Captura métricas HTTP automáticamente. |
+| Custom Metrics | Implementa las métricas RED definidas anteriormente. |
+
+### Configuración propuesta
+
+1. Prometheus Exporter en puerto `9464`.
+2. Auto-instrumentación para HTTP y Fastify.
+3. Métricas RED personalizadas.
+4. Métricas de memoria y concurrencia.
+5. Integración futura con OpenTelemetry Collector.
+
+---
+
+## Dashboard RED en Grafana
+Grafana será la herramienta encargada de visualizar la información recolectada.
+
+Permitirá construir dashboards interactivos para:
+
+* Estado general del sistema.
+* Rendimiento de la API.
+* Consumo de recursos.
+* Errores por endpoint.
+* Tendencias de utilización.
+
+De esta manera los operadores podrán detectar rápidamente anomalías y tomar decisiones basadas en datos objetivos.
+### Paneles propuestos
+
+| Panel | Métrica | Tipo de gráfico | Propósito |
+|---------|---------|---------|---------|
+| Requests por segundo | `rate(http_server_duration_count[1m])` | Time Series | Visualizar el tráfico actual de la API. |
+| Tasa de error | `rate(http_requests_total{status=~"5.."}[1m])` | Time Series | Medir el porcentaje de errores. |
+| Latencia p95/p99 | `histogram_quantile()` | Time Series | Analizar la performance percibida por los usuarios. |
+| Requests por código HTTP | `sum by(status)(rate(...))` | Stacked Area | Visualizar distribución de respuestas exitosas y fallidas. |
+| Memoria del proceso | `process_memory_usage` | Time Series | Monitorear consumo de memoria de la aplicación. |
+| Endpoints más lentos | `topk(5, ...)` | Bar Chart (horizontal) | Detectar cuellos de botella y rutas problemáticas. |
+
+### Resultado esperado
+
+La combinación de OpenTelemetry, Prometheus y Grafana permitirá construir una solución completa de observabilidad para la API, proporcionando visibilidad sobre la salud, rendimiento y comportamiento del sistema en tiempo real.
