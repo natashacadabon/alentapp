@@ -1,0 +1,146 @@
+# 1. Análisis de Infraestructura Docker
+
+## 1.1. Problemas identificados en la infraestructura Docker actual
+
+### Problema 1 — Ejecución como usuario root
+
+| Campo | Detalle |
+|---|---|
+| **Problema** | Ninguno de los Dockerfiles define un usuario **no-root**. Por defecto Docker ejecuta el proceso como `root` (UID 0) |
+| **¿Dónde ocurre?** | `packages/api/Dockerfile` (ausencia de instrucción `USER`) y `packages/web/Dockerfile` (ídem) |
+| **Impacto** | **Alto** — Si un atacante explota una vulnerabilidad en la aplicación, obtiene acceso root al contenedor. Combinado con un filesystem read-write (ver Problema 5), puede modificar archivos del sistema o escalar privilegios hacia el host |
+| **Solución propuesta** |Crear un usuario sin privilegios en el Dockerfile (`adduser appuser`) y agregar `USER appuser` antes del `CMD`. Node.js también provee un usuario built-in `node` que se puede usar directamente |
+
+---
+ 
+### Problema 2 — Sin aislamiento de red entre servicios
+ 
+| Campo | Detalle |
+|---|---|
+| **Problema** | Todos los servicios comparten la misma red por defecto de Docker, por lo que cualquier contenedor puede comunicarse directamente con cualquier otro sin restricciones |
+| **¿Dónde ocurre?** | `docker-compose.yml` (ausencia de sección `networks`) |
+| **Impacto** | **Alto** — El frontend puede conectarse directamente a la base de datos sin pasar por la API, lo cual no es el comportamiento esperado. Si el contenedor web es comprometido, tiene acceso directo a Postgres |
+| **Solución propuesta** | Definir redes explícitas: una red `backend` para `api` y `db`, y una red `frontend` para `web` y `api`. La base de datos queda aislada y solo accesible desde la API |
+ 
+---
+ 
+### Problema 3 — Sin límites de recursos (CPU/memoria) ni healthchecks en la API y el Web
+ 
+| Campo | Detalle |
+|---|---|
+| **Problema** | Los servicios `api` y `web` en el compose no tienen definidos limites de recursos (CPU, ni memoria) ni `healthcheck`. Solo el servicio `db` tiene healthcheck. |
+| **¿Dónde ocurre?** | `docker-compose.yml`, secciones de servicios `api` y `web` (ausencia de las claves `deploy` y `healthcheck`) |
+| **Impacto** | **Medio** — Un memory leak o un loop infinito en la API puede consumir toda la RAM del host y tirar los demás servicios. Sin healthcheck, Docker no detecta si la app crasheó silenciosamente y el contenedor aparece como "running" aunque no responda |
+| **Solución propuesta** | Agregar en cada servicio: límites con `deploy.resources.limits` (ej: `cpus: '0.5'`, `memory: 512M`) y un healthcheck como `curl -f http://localhost:3000/health || exit 1` con `interval: 30s`, `timeout: 10s`, `retries: 3` |
+ 
+---
+
+### Problema 4 — Imagen final incluye archivos y dependencias innecesarias
+ 
+| Campo | Detalle |
+|---|---|
+| **Problema** | No existe `.dockerignore` y se instalan todas las dependencias incluyendo las de desarrollo. La imagen de la API termina con dependencias del frontend (React, Vite) que nunca va a usar. Además, sin un `.dockerignore`, el `COPY . .` puede filtrar archivos sensibles del directorio local como .env o claves privadas |
+| **¿Dónde ocurre?** | `packages/api/Dockerfile` y `packages/web/Dockerfile` (instrucciones `RUN npm install` y `COPY . .`) |
+| **Impacto** | **Alto** — La imagen podria pesar ~1GB cuando debería pesar ~300MB. Más paquetes instalados significa mayor superficie de ataque. Además archivos sensibles del desarrollador pueden quedar dentro de la imagen sin que nadie lo note |
+| **Solución propuesta** | Crear `.dockerignore` que excluya `node_modules`, `.git`, `dist`, `.env*`, y archivos de test. En el multi-stage build, instalar solo las dependencias del paquete específico con `npm ci --omit=dev -w packages/api` y copiar solo esos node_modules a la etapa final |
+ 
+---
+ 
+### Problema 5 — Filesystem del contenedor completamente escribible
+ 
+| Campo | Detalle |
+|---|---|
+| **Problema** | Los contenedores no tienen el filesystem en modo solo lectura, por lo que cualquier proceso dentro puede crear, modificar o eliminar archivos en cualquier parte del sistema |
+| **¿Dónde ocurre?** | `docker-compose.yml`, servicios `api` y `web` (ausencia de `read_only: true`) |
+| **Impacto** | **Alto** — Si la aplicación es comprometida, el atacante puede modificar binarios, instalar backdoors o alterar la configuración en tiempo de ejecución sin dejar rastros evidentes |
+| **Solución propuesta** | Agregar `read_only: true` en cada servicio. Para las rutas donde la app necesita escribir legítimamente (temporales, uploads), montar volúmenes específicos con `tmpfs` solo para esas rutas |
+
+ 
+---
+ 
+ 
+## 1.2. OpenTelemetry — Investigación
+ 
+### OpenTelemetry
+ 
+OpenTelemetry (OTel) es un framework de observabilidad open-source que permite instrumentar una aplicación para capturar datos sobre su comportamiento en tiempo de ejecución. Provee APIs, SDKs y herramientas para generar, recolectar y exportar datos de telemetría (métricas, trazas y logs). Es vendor-neutral, es decir, independiente de cualquier proveedor o herramienta específica — una aplicación instrumentada con OTel puede exportar su telemetría a cualquier backend compatible (Prometheus, Jaeger, Datadog, etc.) sin necesidad de modificar el código de instrumentación. Es un estándar mantenido por la CNCF (Cloud Native Computing Foundation).
+
+#### Diferencia de Prometheus
+**Prometheus** es una herramienta de *monitoreo y almacenamiento de métricas* que incluye su propio modelo de datos, lenguaje de consulta (PromQL) y sistema de scraping. Se encarga de recolectar, almacenar y consultar métricas, pero no está diseñado para manejar trazas distribuidas ni logs de forma nativa.
+ 
+Las diferencias clave son:
+ 
+| Aspecto | OpenTelemetry | Prometheus |
+|---|---|---|
+| **Rol** | Instrumentación y recolección (el "cómo capturar") |Almacena métricas y permite consultarlas |
+| **Cobertura** | Métricas + Trazas + Logs (los 3 pilares) | Solo métricas |
+| **Vendor neutrality** | A ninguna herramienta específica | Es su propio sistema |
+| **Exportación** | Exporta a múltiples backends (Prometheus, Jaeger, Zipkin, etc.) | Va a buscarlos (scraping) al endpoint `/metrics` de la app. Puede recibir métricas provenientes de OpenTelemetry. |
+ 
+En la práctica se usan juntos: OpenTelemetry instrumenta la app y expone un endpoint `/metrics` en formato Prometheus, y Prometheus scrapea ese endpoint.
+ 
+---
+ 
+### Los "3 pilares" de la observabilidad
+ 
+Los tres pilares son:
+ 
+1. **Métricas**: datos numéricos que describen el estado y rendimiento del sistema a lo largo del tiempo (contadores, gauges, histogramas). Responden "¿qué está pasando?". Ejemplo: requests/segundo, uso de CPU, consumo de memoria.
+2. **Trazas (Traces)**: registran el recorrido completo de una request a través de múltiples servicios, mostrando cada operación (span) con su duración y contexto. Responden "¿por dónde pasó y cuánto tardó cada paso?".
+3. **Logs**: registros de eventos ocurridos discretos con timestamp y contexto. Responden "¿qué ocurrió exactamente?".
+
+OpenTelemetry aborda los **tres pilares** con una API y SDK unificados. Su objetivo es unificar la recolección y correlación de toda esta información bajo un mismo estándar.
+ 
+---
+ 
+### Métricas RED (Rate, Errors, Duration)
+ 
+El método RED fue propuesto por Tom Wilkie (Grafana Labs) para monitorear servicios y APIs. Y define tres métricas fundamentales para cualquier servicio orientado a requests:
+ 
+| Métrica | Descripción | Utilidad |
+|---|---|---|
+| **Rate** (Tasa) | Cantidad de requests por unidad de tiempo que recibe el servicio | Mide el volumen de tráfico. Un pico de Rate puede indicar un ataque o un evento de alta demanda |
+| **Errors** (Errores) | Tasa o porcentaje de requests que resultan en error (4xx/5xx) | Mide la confiabilidad del servicio. Un aumento de errores alerta sobre bugs, caídas de dependencias o deploys con problemas |
+| **Duration** (Duración/Latencia) | Tiempo que tarda el servicio en responder cada request | Mide la experiencia del usuario. La latencia alta puede indicar cuellos de botella en la DB, procesamiento pesado o saturación de recursos |
+ 
+Las tres métricas juntas permiten detectar casi cualquier problema de producción: si Rate cae + Errors sube → el servicio está fallando; si Rate sube + Duration sube → hay saturación de recursos.
+ 
+---
+ 
+### OTLP
+ 
+**OTLP (OpenTelemetry Protocol)** es el protocolo de transporte nativo de OpenTelemetry. Define un formato binario estándar (basado en Protocol Buffers) para enviar telemetría de una aplicación a un OpenTelemetry Collector o a un backend compatible.
+ 
+#### Ventajas frente a exportar directamente a Prometheus
+ 
+| Aspecto | Exportar directo a Prometheus | Usar OTLP |
+|---|---|---|
+| **Modelo** | Pull: Prometheus scrapea el endpoint `/metrics` de la app | Push: la app envía los datos activamente al collector |
+| **Cobertura** | Solo métricas (formato text/exposition) | Métricas + Trazas + Logs en un único protocolo |
+| **Flexibilidad** | Si querés cambiar de Prometheus a otro backend, requiere re-instrumentar la app | Con OTLP, solo se cambia la configuración del Collector sin tocar el código de la app |
+| **Procesamiento** | No hay capa intermedia: la app expone y Prometheus consume | El Collector puede filtrar, transformar, enriquecer y rutear a múltiples backends simultáneamente |
+| **Complejidad** | Más simple para setups pequeños | Requiere correr un OTel Collector, pero escala mucho mejor |
+ 
+La principal ventaja de OTLP es el **desacoplamiento**: la app solo habla OTLP, y el Collector decide a dónde mandar los datos (Prometheus, Grafana Tempo, Elasticsearch, DataDog, etc.) sin necesidad de cambiar código de aplicación.
+ 
+---
+ 
+### Relación de OpenTelemetry con Grafana
+ 
+Grafana es una plataforma de **visualización** de datos mediante dashboards que puede conectarse a múltiples fuentes. Por sí sola no captura ni almacena nada, solo visualiza.
+La relación con OpenTelemetry es la siguiente:
+ 
+```
+Aplicación (instrumentada con OTel SDK)
+        ↓ 
+ OpenTelemetry Collector
+        ↓ 
+    Grafana Stack 
+    ├─ Prometheus (métricas)
+    ├─ Loki (logs)
+    └─ Tempo (trazas)
+        ↓ 
+    Grafana (consulta y renderiza dashboards)
+```
+ 
+Grafana también soporta directamente **Grafana Tempo** como backend de trazas (compatible con OTLP), y **Grafana Loki** para logs, formando la suite de observabilidad completa de Grafana.
