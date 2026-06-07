@@ -17,6 +17,7 @@ import { LuPlus, LuRefreshCw, LuPencil, LuTrash2 } from 'react-icons/lu';
 import { useEffect, useState } from 'react';
 import { medicalCertificateService } from '../services/medicalcertificate';
 import type {
+    MemberDTO,
     MedicalCertificateDTO,
     CreateMedicalCertificateRequest,
     UpdateMedicalCertificateRequest,
@@ -37,6 +38,18 @@ import { ConfirmActionDialog } from '../components/ConfirmActionDialog';
 import { MemberSearchInput } from '../components/MemberSearchInput';
 const getErrorMessage = (error: unknown, fallback: string) =>
     error instanceof Error ? error.message : fallback;
+
+type MedicalCertificateEditFormData = UpdateMedicalCertificateRequest & {
+    member_id?: string;
+};
+
+const toDateInputValue = (value?: Date | string): string => {
+    if (!value) return '';
+    return value instanceof Date
+        ? value.toISOString().split('T')[0]
+        : value.split('T')[0];
+};
+
 export function MedicalCertificateView() {
     const [certificates, setCertificates] = useState<MedicalCertificateDTO[]>(
         [],
@@ -52,7 +65,7 @@ export function MedicalCertificateView() {
     const [editingCertificate, setEditingCertificate] =
         useState<MedicalCertificateDTO | null>(null);
     const [editFormData, setEditFormData] =
-        useState<UpdateMedicalCertificateRequest | null>(null);
+        useState<MedicalCertificateEditFormData | null>(null);
 
     const [formData, setFormData] = useState<CreateMedicalCertificateRequest>({
         issue_date: '',
@@ -73,7 +86,6 @@ export function MedicalCertificateView() {
         searchMembers,
         handleSelectMember,
         resetMemberSearch,
-        setMemberSearchValue,
     } = useMemberSearch((member: MemberDTO) => {
         setFormData((prev) => ({
             ...prev,
@@ -247,7 +259,9 @@ export function MedicalCertificateView() {
                                     <Field label="Fecha de emisión" required>
                                         <Input
                                             type="date"
-                                            value={formData.issue_date}
+                                            value={toDateInputValue(
+                                                formData.issue_date,
+                                            )}
                                             onChange={(e) =>
                                                 setFormData({
                                                     ...formData,
@@ -264,7 +278,9 @@ export function MedicalCertificateView() {
                                     >
                                         <Input
                                             type="date"
-                                            value={formData.expiry_date}
+                                            value={toDateInputValue(
+                                                formData.expiry_date,
+                                            )}
                                             onChange={(e) =>
                                                 setFormData({
                                                     ...formData,
@@ -407,7 +423,7 @@ export function MedicalCertificateView() {
                                             </Table.Cell>
                                         </Table.Row>
                                     ) : (
-                                        certificates.data.map((certificate) => (
+                                        certificates.map((certificate) => (
                                             <Table.Row
                                                 key={certificate.id}
                                                 _hover={{ bg: 'bg.muted/30' }}
@@ -519,7 +535,9 @@ export function MedicalCertificateView() {
                                 <Field label="Fecha de emisión" required>
                                     <Input
                                         type="date"
-                                        value={editFormData?.issue_date ?? ''}
+                                        value={toDateInputValue(
+                                            editFormData?.issue_date,
+                                        )}
                                         onChange={(e) =>
                                             setEditFormData((prev) =>
                                                 prev
@@ -537,7 +555,9 @@ export function MedicalCertificateView() {
                                 <Field label="Fecha de vencimiento" required>
                                     <Input
                                         type="date"
-                                        value={editFormData?.expiry_date ?? ''}
+                                        value={toDateInputValue(
+                                            editFormData?.expiry_date,
+                                        )}
                                         onChange={(e) =>
                                             setEditFormData((prev) =>
                                                 prev

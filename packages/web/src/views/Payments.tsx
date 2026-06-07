@@ -329,7 +329,7 @@ export function PaymentsView() {
                                                         colorPalette="red"
                                                         aria-label="Cancelar pago"
                                                         onClick={() =>
-                                                            openCancelPaymentDialog(
+                                                            handleOpenDeleteModal(
                                                                 payment,
                                                             )
                                                         }

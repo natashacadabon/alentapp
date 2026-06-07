@@ -176,7 +176,6 @@ export function PaymentFormDialog({
                                                         .value as PaymentStatus,
                                                 )
                                             }
-                                            required
                                         >
                                             <option value="" disabled>
                                                 Seleccionar Estado
