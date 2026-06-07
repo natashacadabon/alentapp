@@ -9,6 +9,10 @@ test/e2e/reports
 test-results
 playwright-report-fullstack
 selenium-debug.log
+.env
+.env.*
+**/.env
+**/.env.*
 
 
 # test
