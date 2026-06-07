@@ -5,12 +5,18 @@
     "main": "src/app.ts",
     "scripts": {
         "dev": "tsx watch src/app.ts",
+        "build": "tsc --ignoreConfig --target ES2022 --module NodeNext --moduleResolution NodeNext --strict --skipLibCheck --esModuleInterop --outDir .build src/app.ts || node -e \"require('fs').existsSync('.build/api/src/app.js') || process.exit(1)\" && node -e \"const fs = require('fs'); fs.rmSync('dist', { recursive: true, force: true }); fs.cpSync('.build/api/src', 'dist', { recursive: true }); fs.cpSync('src/generated', 'dist/generated', { recursive: true }); fs.rmSync('.build', { recursive: true, force: true });\"",
         "test": "vitest",
         "coverage": "vitest run --coverage"
     },
     "dependencies": {
         "@alentapp/shared": "^1.0.0",
         "@fastify/cors": "^11.2.0",
+        "@opentelemetry/auto-instrumentations-node": "^0.76.0",
+        "@opentelemetry/exporter-prometheus": "^0.218.0",
+        "@opentelemetry/instrumentation-fastify": "^0.56.0",
+        "@opentelemetry/instrumentation-http": "^0.218.0",
+        "@opentelemetry/sdk-node": "^0.218.0",
         "@prisma/adapter-pg": "7.8.0",
         "@prisma/client": "7.8.0",
         "fastify": "^5.8.5"

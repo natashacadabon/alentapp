@@ -1,3 +1,5 @@
+// PRIMERO: inicializar OpenTelemetry (antes de cualquier otro import)
+import './infrastructure/telemetry.js';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { PostgresMemberRepository } from './infrastructure/PostgresMemberRepository.js';
@@ -232,17 +234,29 @@ export function buildApp() {
     server.post('/api/v1/lockers', lockerController.create.bind(lockerController));
     server.patch('/api/v1/lockers/:id', lockerController.update.bind(lockerController));
     server.delete('/api/v1/lockers/:id', lockerController.delete.bind(lockerController));
-
+    
+    server.get('/health', async (req, rep) => {
+        rep.status(200).send({ status: 'ok', 
+            service: 'API',
+            uptime: process.uptime(),
+        });
+    }   );
 
     server.get('/', async (req, rep) => {
         rep.status(200).send({ msg: 'asd' });
     });
 
+   
+
     return server;
 }
-
-// Solo iniciar el servidor si el script se ejecuta directamente (no cuando es importado por vitest)
-if (process.argv[1] && process.argv[1].endsWith('app.ts')) {
+// Solo iniciar el servidor si el script se ejecuta directamente
+// En desarrollo puede ejecutarse como app.ts
+// En producción Docker ejecuta el compilado app.js
+if (
+    process.argv[1] &&
+    (process.argv[1].endsWith('app.ts') || process.argv[1].endsWith('app.js'))
+) {
     const server = buildApp();
     const port = parseInt(process.env.PORT || '3000', 10);
 
