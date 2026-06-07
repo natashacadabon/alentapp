@@ -1,8 +1,8 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { MeterProvider, Meter } from '@opentelemetry/sdk-metrics';
 import { metrics } from '@opentelemetry/api';
+import type { Meter } from '@opentelemetry/api';
 // Configurar Prometheus Exporter
 const prometheusExporter = new PrometheusExporter({
  port: 9464,
@@ -15,7 +15,7 @@ const sdk = new NodeSDK({
  getNodeAutoInstrumentations({
  '@opentelemetry/instrumentation-http': {},
  '@opentelemetry/instrumentation-fastify': {},
- }),
+ } as Parameters<typeof getNodeAutoInstrumentations>[0]),
  ],
 });
 // Iniciar SDK

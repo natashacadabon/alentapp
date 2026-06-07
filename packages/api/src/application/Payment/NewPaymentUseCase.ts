@@ -29,7 +29,6 @@ export class CreatePaymentUseCase {
         //persistencia
         const newPayment = await this.paymentRepository.create({
             ...data,
-            due_date: new Date(data.due_date),
             status: 'Pendiente', // Regla de negocio: todos los pagos nuevos son Pendientes
 
         });

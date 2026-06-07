@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PaymentFormDialog } from './PaymentFormDialog';
 import { DialogRoot } from './ui/dialog';
 import { Provider } from './ui/provider';
+import type { MemberDTO } from '@alentapp/shared';
 
 describe('PaymentFormDialog', () => {
     // Mocks de callbacks para verificar interacciones sin ejecutar lógica real.
@@ -106,7 +107,7 @@ describe('PaymentFormDialog', () => {
 
     // Test 3: Verifica selección de socio desde resultados de búsqueda.
     it('debe permitir seleccionar un socio encontrado', () => {
-        const member = {
+        const member: MemberDTO = {
             id: 'member-1',
             name: 'Juan Perez',
             dni: '12345678',
@@ -114,6 +115,7 @@ describe('PaymentFormDialog', () => {
             birthdate: '1990-01-01',
             category: 'Pleno',
             status: 'Activo',
+            created_at: '2026-01-01T00:00:00.000Z',
         };
 
         renderDialog({

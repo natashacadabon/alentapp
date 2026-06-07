@@ -125,7 +125,7 @@ export class PostgresPaymentRepository implements PaymentRepository {
                       name: payment.member.name,
                       dni: payment.member.dni,
                   }
-                : null,
+                : undefined,
         };
     }
 }
