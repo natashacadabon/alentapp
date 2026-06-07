@@ -346,3 +346,91 @@ Los errores fueron visibles en el dashboard:
 - **Panel 3**: la latencia p99 se mantuvo estable en ~20ms, confirmando que los errores 404 no generan degradación de performance
 - **Panel 4**: crecimiento sostenido de requests con status 200, llegando a ~2.5 por segundo
 - **Panel 6**: apareció el valor `0.0105` en el bloque `404`, correspondiente al rate de los errores 404 generados, confirmando que las métricas de error están siendo correctamente registradas e instrumentadas en los controllers.
+
+---
+
+# 4.4. Documentación de Decisiones
+
+## Arquitectura final
+
+![Arquitectura Final del Sistema](capturas/arquitectura-final.png)
+
+El sistema quedó compuesto por frontend React + Vite servido por nginx, backend en Fastify con Prisma sobre PostgreSQL y capa de observabilidad con OpenTelemetry, Prometheus y Grafana.
+
+## Decisiones técnicas
+
+- Multi-stage build: se separó build/runtime para reducir tamaño de imágenes y superficie de ataque.
+- nginx: se eligió para servir estáticos del frontend y exponer un healthcheck del servicio web.
+- OpenTelemetry + Prometheus Exporter: se instrumentó la API y se expone `/metrics` en el puerto 9464 para scraping.
+- Prometheus + Grafana: Prometheus se usa para scrape/almacenamiento de métricas y Grafana para visualización del dashboard RED.
+
+## Problemas encontrados y cómo se resolvieron
+
+- Caché de Docker:
+	Dev: ya se usaba orden favorable de capas, pero el flujo de desarrollo prioriza bind mounts y hot reload.
+	Prod: se consolidó multi-stage para reducir imagen final y mejorar seguridad/runtime.
+- Credenciales:
+	Dev: había credenciales hardcodeadas en compose.
+	Prod: se migraron a variables de entorno para evitar exposición en repositorio.
+- Robustez operativa:
+	Dev: faltaban protecciones de runtime y validaciones de salud en producción.
+	Prod: se agregaron healthchecks y configuración `read_only` + `tmpfs` en contenedores productivos.
+- Observabilidad:
+	Dev: la visibilidad de métricas era limitada para análisis de comportamiento.
+	Prod: se instrumentó la API con OpenTelemetry y se habilitó scraping con Prometheus para observar tasa, errores y latencia.
+
+## Capturas del dashboard RED funcionando con datos
+
+![Panel Rate](capturas/dashboard-completo1.png)
+![Panel Rate](capturas/dashboard-completo2.png)
+
+
+#### Panel 1: Requests por segundo (Rate)
+```promql
+rate(http_server_duration_count[1m])
+```
+Mide el volumen de tráfico. Muestra la cantidad de requests que llegan al servidor por segundo en los últimos 1 minuto.
+
+![Panel Rate](capturas/requests.png)
+
+#### Panel 2: Tasa de error (%)
+```promql
+sum(rate(http_server_duration_count{status=~"5.."}[1m])) /
+sum(rate(http_server_duration_count[1m])) * 100
+```
+Calcula el porcentaje de requests que resultan en error 5xx. Alertas de confiabilidad del servicio.
+
+![Panel Errors](capturas/tasa-error.png)
+
+#### Panel 3: Latencia p95 / p99
+```promql
+histogram_quantile(0.95, sum(rate(http_server_duration_bucket[5m])) by (le))
+histogram_quantile(0.99, sum(rate(http_server_duration_bucket[5m])) by (le))
+```
+Mide los percentiles 95 y 99 de latencia (en milisegundos). Útil para detectar cuellos de botella y experiencia del usuario.
+
+![Panel P95](capturas/latencia.png)
+
+#### Panel 4: Requests por status code
+```promql
+sum by (status) (rate(http_server_duration_count[5m]))
+```
+Distribuye las requests por status HTTP (2xx, 4xx, 5xx, etc.). Permite visualizar la salud de cada categoría.
+
+![Panel Status Codes](capturas/status-code.png)
+
+#### Panel 5: Memoria del proceso
+```promql
+process_memory_usage_bytes / 1024 / 1024
+```
+Muestra el consumo de memoria del proceso en MiB. Detecta memory leaks o picos inesperados.
+
+![Panel Memoria](capturas/memoria-proceso.png)
+
+#### Panel 6: Endpoints más lentos (Top 5)
+```promql
+topk(5, avg by (route) (http_server_duration_ms))
+```
+Identifica los 5 endpoints con mayor latencia promedio. Prioriza optimizaciones.
+
+![Panel Top Endpoints](capturas/endpoints.png)
