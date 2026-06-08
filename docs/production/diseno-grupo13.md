@@ -114,7 +114,7 @@ Este archivo debe permitir levantar una infraestructura más cercana a producci�
 * Base de datos PostgreSQL.
 * API backend Node.js/TypeScript.
 * Frontend React/Vite servido con Nginx.
-* OpenTelemetry Collector.
+* OpenTelemetry SDK con PrometheusExporter en la API.
 * Prometheus.
 * Grafana.
 * Volúmenes persistentes.
@@ -130,8 +130,7 @@ La finalidad es lograr una arquitectura más segura, observable, mantenible y re
 |`db`|PostgreSQL 16|Almacenar de forma persistente la información del sistema.
 |`api`|Backend Node.js/TypeScript|Exponer la API REST, aplicar reglas de negocio y comunicarse con la base de datos.
 |`web`|Frontend Nginx|Servir la aplicación React compilada como archivos estáticos.
-|`otel-collector`|	OpenTelemetry Collector|	Recibir métricas, logs y trazas desde la API y exportarlas hacia herramientas de monitoreo.
-`prometheus`|	Prometheus|	Almacenar métricas temporales y permitir consultas sobre el estado del sistema.
+|`prometheus`|	Prometheus|	Recolectar las métricas expuestas por la API en `:9464/metrics`, almacenarlas temporalmente y permitir consultas sobre el estado del sistema.
 |`grafana`|	Grafana|	Visualizar métricas mediante dashboards.
 |`volumes`|	Volúmenes| persistentes	Conservar datos de PostgreSQL y configuraciones/datos de Grafana aunque los contenedores se reinicien.
 |`networks`|	Redes Docker internas|	Aislar la comunicación entre servicios y evitar exposición innecesaria.
@@ -177,22 +176,9 @@ Responsabilidades principales:
 * Incluir healthcheck HTTP.
 * Exponer el puerto HTTP necesario.
 
-#### Servicio `otel-collector`
-
-El servicio `otel-collector` se encarga de recibir datos de telemetría generados por la aplicación. Estos datos pueden incluir métricas, logs y trazas. El collector actúa como intermediario entre la aplicación y las herramientas de observabilidad.
-
-Su uso permite desacoplar la aplicación del backend de monitoreo. La API no necesita conocer directamente a Prometheus o Grafana; simplemente exporta telemetría mediante OTLP hacia el collector.
-
-Responsabilidades principales:
-
-* Recibir telemetría OTLP desde la API.
-* Procesar métricas, logs y trazas.
-* Exportar métricas hacia Prometheus.
-* Centralizar la configuración de observabilidad.
-
 #### Servicio `prometheus`
 
-Prometheus se utiliza para almacenar métricas temporales y permitir consultas sobre el estado del sistema. Puede obtener métricas desde el OpenTelemetry Collector y almacenarlas para su posterior visualización.
+Prometheus se utiliza para recolectar y almacenar métricas temporales, permitiendo consultas sobre el estado del sistema. La API inicializa OpenTelemetry SDK y expone las métricas directamente mediante `PrometheusExporter` en el puerto `9464`, endpoint `/metrics`. Prometheus scrapea ese endpoint y almacena las series para su posterior visualización.
 
 Responsabilidades principales:
 
@@ -226,7 +212,7 @@ El diseño debe cumplir con los siguientes requisitos:
 * Separar servicios mediante redes internas.
 * Evitar exponer puertos innecesarios.
 * Permitir la comunicación interna entre `api`, `db` y servicios de observabilidad.
-* Incluir OpenTelemetry Collector, Prometheus y Grafana para observabilidad.
+* Incluir OpenTelemetry SDK con PrometheusExporter, Prometheus y Grafana para observabilidad.
 * Definir límites de recursos cuando sea posible
 ### Requisitos no funcionales
 Requisito|Valor esperado|	Justificación|
@@ -300,7 +286,7 @@ Entre sus responsabilidades se encuentran:
 2. Auto-instrumentación para HTTP y Fastify.
 3. Métricas RED personalizadas.
 4. Métricas de memoria y concurrencia.
-5. Integración futura con OpenTelemetry Collector.
+5. Recolección de métricas mediante scraping de Prometheus sobre `:9464/metrics`.
 
 ---
 

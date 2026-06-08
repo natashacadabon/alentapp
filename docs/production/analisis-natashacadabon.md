@@ -231,9 +231,9 @@ Aunque OpenTelemetry y Prometheus suelen utilizarse juntos dentro de una arquite
 
 La aplicación genera telemetría mediante OpenTelemetry.
 
-Posteriormente, dicha información es enviada a un OpenTelemetry Collector, que actúa como intermediario y exporta las métricas hacia Prometheus.
+Posteriormente la API utiliza el SDK de OpenTelemetry junto con `PrometheusExporter`, que expone las métricas directamente en el endpoint `/metrics` del puerto `9464`.
 
-Finalmente, Grafana consulta Prometheus para mostrar dashboards y paneles de monitoreo.
+Prometheus recolecta esas métricas mediante scraping y Grafana consulta Prometheus para mostrar dashboards y paneles de monitoreo.
 
 #### OpenTelemetry
 OpenTelemetry (OTel) es un conjunto de estándares, APIs, SDKs y herramientas cuyo objetivo es generar, recopilar y exportar información de observabilidad desde una aplicación. Su objetivo es generar telemetría y enviarla a sistemas especializados que posteriormente la procesarán.
@@ -241,7 +241,7 @@ Su función principal es instrumentar el software para obtener datos sobre su co
 - Métricas.
 - Logs.
 - Trazas distribuidas (Distributed Tracing).
-Toda la información es exportada mediante OTLP (OpenTelemetry Protocol) hacia otras plataformas de observabilidad.
+Las métricas se exponen directamente en formato compatible con Prometheus mediante `PrometheusExporter`. 
 
 
 #### Prometheus
@@ -268,7 +268,7 @@ Almacena información	|No|	Sí
 Permite consultas históricas	|No|	Sí
 Genera alertas|	No|	Sí
 Visualiza datos|	No|	No |
-Protocolo principal|	OTLP	|Prometheus Scraping / Remote Write
+Protocolo principal|	PrometheusExporter en `/metrics` para esta implementación; OTLP como alternativa estándar	|Prometheus Scraping / Remote Write
 ### Tres pilares de la observabilidad: 
 
 1. Métricas
@@ -345,44 +345,42 @@ Su utilidad principal es detectar:
 
 ### ¿Qué es OTLP?
 
-OpenTelemetry Protocol es el protocolo estándar definido por OpenTelemetry para transportar información de observabilidad entre aplicaciones y herramientas de monitoreo.
+OpenTelemetry es un estándar abierto para generar información de observabilidad dentro de una aplicación. En nuestro caso, se utiliza para instrumentar la API de AlentApp y obtener métricas sobre su comportamiento en tiempo de ejecución.
 
-Su función principal es transmitir los datos de telemetría generados por una aplicación hacia otros componentes del ecosistema de observabilidad, como el OpenTelemetry Collector, Prometheus, Jaeger, Grafana o cualquier otra plataforma compatible.
+La API genera métricas como cantidad de requests, errores HTTP y duración de las solicitudes. Estas métricas se crean mediante el SDK de OpenTelemetry y se exponen directamente en un endpoint compatible con Prometheus.
 
-Gracias a OTLP, una aplicación no necesita conocer los detalles específicos de la herramienta que finalmente almacenará o visualizará la información. Simplemente envía los datos utilizando un protocolo estándar y el resto de la arquitectura se encarga de procesarlos.
-Exportar directamente a Prometheus implica que la aplicación queda acoplada a una tecnología específica de monitoreo.
+La API usa PrometheusExporter, que publica las métricas en el endpoint:
 
-En este enfoque, la aplicación debe exponer un endpoint de métricas que Prometheus consultará periódicamente mediante el mecanismo conocido como scraping.
+```bash
+:9464/metrics
+```
+Luego, Prometheus consulta periódicamente ese endpoint mediante scraping y almacena las series temporales. Finalmente, Grafana se conecta a Prometheus como fuente de datos para visualizar la información en dashboards.
 
-Por el contrario, cuando se utiliza OTLP, la aplicación exporta su telemetría hacia un OpenTelemetry Collector utilizando un estándar independiente de cualquier herramienta particular.
+Arquitectura utilizada:
 
-La principal ventaja es el desacoplamiento.
+Aplicación → OpenTelemetry SDK + PrometheusExporter → Prometheus → Grafana
 
-Arquitectura:
+### Relación entre OpenTelemetry, Prometheus y Grafana
 
-Aplicación → OTLP → Collector → Prometheus → Grafana
+OpenTelemetry genera las métricas dentro de la API, Prometheus las recolecta y almacena, y Grafana las visualiza.
 
-### Relación entre OpenTelemetry y Grafana
+El flujo implementado es:
 
-OpenTelemetry genera la telemetría, Prometheus la almacena y Grafana la visualiza.
+1. La API genera métricas mediante OpenTelemetry SDK.
+2. PrometheusExporter expone las métricas en `:9464/metrics`.
+3. Prometheus recolecta esas métricas mediante scraping.
+4. Prometheus almacena las series temporales.
+5. Grafana consulta Prometheus como datasource.
+6. Grafana presenta la información mediante dashboards.
 
-Grafana es responsable de visualizar esa información mediante dashboards, gráficos y paneles interactivos.
-
-El flujo sigue: 
-1. La aplicación genera métricas, logs y trazas mediante OpenTelemetry.
-2. La información es enviada mediante OTLP al Collector.
-3. El Collector procesa y exporta los datos.
-4. Prometheus almacena las métricas.
-5. Grafana consulta esos datos y los presenta visualmente.
-
-Grafana puede mostrar información como:
+Grafana permite visualizar información como:
 
 - Requests por segundo.
 - Tiempo de respuesta de la API.
-- Cantidad de errores.
-- Uso de CPU y memoria.
-- Estado de contenedores Docker.
-- Trazas distribuidas entre servicios.
-- Tendencias históricas de rendimiento.
+- Cantidad de errores HTTP.
+- Latencia p95/p99.
+- Uso de memoria del proceso Node.js.
+- Distribución de respuestas por código HTTP.
+- Endpoints con mayor latencia.
 
-Esto permite que los equipos de desarrollo y operaciones tengan una visión completa del estado del sistema en tiempo real, facilitando la detección temprana de problemas y la toma de decisiones basada en datos.
+Esto permite monitorear el estado del sistema en tiempo real, detectar problemas de rendimiento o errores frecuentes y tomar decisiones basadas en métricas objetivas
