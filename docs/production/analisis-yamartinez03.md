@@ -111,17 +111,17 @@ Las tres métricas juntas permiten detectar casi cualquier problema de producci�
  
 **OTLP (OpenTelemetry Protocol)** es el protocolo de transporte nativo de OpenTelemetry. Define un formato binario estándar (basado en Protocol Buffers) para enviar telemetría de una aplicación a un OpenTelemetry Collector o a un backend compatible.
  
-#### Ventajas frente a exportar directamente a Prometheus
+#### Enfoques de Exportación de Telemetría
+
+Existen dos enfoques conceptuales para enviar la telemetría generada por OpenTelemetry hacia los sistemas de almacenamiento:
  
-| Aspecto | Exportar directo a Prometheus | Usar OTLP |
+| Dimensión | Exportación Directa (Formato Prometheus) | Exportación vía OTLP |
 |---|---|---|
-| **Modelo** | Pull: Prometheus scrapea el endpoint `/metrics` de la app | Push: la app envía los datos activamente al collector |
-| **Cobertura** | Solo métricas (formato text/exposition) | Métricas + Trazas + Logs en un único protocolo |
-| **Flexibilidad** | Si querés cambiar de Prometheus a otro backend, requiere re-instrumentar la app | Con OTLP, solo se cambia la configuración del Collector sin tocar el código de la app |
-| **Procesamiento** | No hay capa intermedia: la app expone y Prometheus consume | El Collector puede filtrar, transformar, enriquecer y rutear a múltiples backends simultáneamente |
-| **Complejidad** | Más simple para setups pequeños | Requiere correr un OTel Collector, pero escala mucho mejor |
+| **Modelo de comunicación** | **Pull**: El backend de almacenamiento solicita los datos al endpoint de la app periódicamente. | **Push**: La aplicación envía activamente los datos hacia un receptor en cuanto se generan. |
+| **Componentes requeridos** | **Mínimos**: Solo la aplicación y el almacenamiento final. | **Adicionales**: Requiere un agente intermedio (Collector) que reciba el flujo OTLP. |
+| **Alcance nativo** | Diseñado exclusivamente para el intercambio de **métricas**. | Diseñado como un estándar unificado para **métricas, trazas y logs**. |
  
-La principal ventaja de OTLP es el **desacoplamiento**: la app solo habla OTLP, y el Collector decide a dónde mandar los datos (Prometheus, Grafana Tempo, Elasticsearch, DataDog, etc.) sin necesidad de cambiar código de aplicación.
+En arquitecturas donde no se utiliza un componente intermediario (como un Collector), la relación es directa: OpenTelemetry actúa como la biblioteca de instrumentación dentro de la aplicación para generar las métricas, y las expone en un endpoint compatible para que Prometheus realice la recolección (scraping) clásica.
  
 ---
  
@@ -132,15 +132,10 @@ La relación con OpenTelemetry es la siguiente:
  
 ```
 Aplicación (instrumentada con OTel SDK)
-        ↓ 
- OpenTelemetry Collector
-        ↓ 
-    Grafana Stack 
-    ├─ Prometheus (métricas)
-    ├─ Loki (logs)
-    └─ Tempo (trazas)
-        ↓ 
-    Grafana (consulta y renderiza dashboards)
+        ↓ expone /metrics
+Prometheus (scrapea y almacena las métricas)
+        ↓ Grafana lo consulta con PromQL
+    Grafana (muestra los dashboards)
 ```
  
-Grafana también soporta directamente **Grafana Tempo** como backend de trazas (compatible con OTLP), y **Grafana Loki** para logs, formando la suite de observabilidad completa de Grafana.
+Cada herramienta tiene un rol claro: OpenTelemetry captura, Prometheus almacena, Grafana visualiza.
