@@ -45,6 +45,7 @@ describe('PaymentController', () => {
             year: 2026,
             due_date: '2026-05-10',
         },
+        routeOptions: { url: '/api/v1/payments' }
     };
 
     beforeEach(() => {

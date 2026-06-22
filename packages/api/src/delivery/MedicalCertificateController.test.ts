@@ -31,6 +31,7 @@ describe('MedicalCertificateController', () => {
         params: {
             id: 'certificate-1',
         },
+        routeOptions: { url: '/api/v1/medical-certificates/' },
         body: {
             member_id: 'member-1',
             issue_date: '2026-05-01',

@@ -23,6 +23,7 @@ describe('LockerController', () => {
 
     const mockRequest = {
         body: { number: 5, location: 'Vestuario A' },
+        routeOptions: { url: '/api/v1/lokers/' },
         params: { id: '1' },
     };
 

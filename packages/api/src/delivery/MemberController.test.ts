@@ -25,7 +25,8 @@ describe('MemberController', () => {
         log: { info: vi.fn() },
         body: { name: 'Juan' },
         params: { id: '123' },
-        query: {} // agrego porque lo maneja en getAll del controller
+        query: {}, // agrego porque lo maneja en getAll del controller
+        routeOptions: { url: '/api/v1/members' }
     };
 
     beforeEach(() => {
