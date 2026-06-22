@@ -89,7 +89,7 @@ test.describe('Payments Full-Stack E2E', () => {
 
         // Clic en Editar
         await page
-            .getByRole('button', { name: /Editar miembro/i })
+            .getByRole('button', { name: /Editar pago/i })
             .first()
             .click();
         await expect(

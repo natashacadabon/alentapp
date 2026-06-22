@@ -306,7 +306,7 @@ export function PaymentsView() {
                                                         type="button"
                                                         variant="ghost"
                                                         size="sm"
-                                                        aria-label="Editar miembro"
+                                                        aria-label="Editar pago"
                                                         onClick={() =>
                                                             handleOpenUpdateModal(
                                                                 payment,
