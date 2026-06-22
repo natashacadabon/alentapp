@@ -57,6 +57,12 @@ services:
         db:
           condition: service_healthy
 
+      # Ejecuta migraciones de Prisma antes de iniciar la aplicación
+      command: >
+        sh -c "cd packages/api &&
+        ../../node_modules/.bin/prisma migrate deploy &&
+        cd ../.. && node packages/api/dist/app.js"
+
       ports:
         - "3000:3000"
         - "9464:9464"  # Puerto de métricas OpenTelemetry

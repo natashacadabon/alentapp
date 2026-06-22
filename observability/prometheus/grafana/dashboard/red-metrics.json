@@ -598,7 +598,7 @@
                       },
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum by (http_status_code) (rate(http_server_duration_count[5m]))",
+                        "expr": "topk(5, sum by (route) (rate(http_request_duration_sum[5m]))/sum by (route) (rate(http_request_duration_count[5m])))",
                         "legendFormat": "__auto",
                         "range": true
                       }
